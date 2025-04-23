@@ -44,11 +44,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             items={[
               {
                 title: "Dashboard",
-                url: "#",
+                url: "/dashboard",
                 icon: SquareTerminal,
                 isActive: true,
                 items: [
-                  { title: "Clusters", url: "#" },
+                  { title: "Clusters", url: "/cluster" },
                   { title: "Activity", url: "#" },
                   { title: "Settings", url: "#" },
                 ],
@@ -58,7 +58,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 url: "#",
                 icon: Bot,
                 items: [
-                  { title: "Logs", url: "#" },
+                  { title: "Logs", url: "/logs" },
                   { title: "Resources Running", url: "#" },
                   { title: "View Status", url: "#" },
                 ],
