@@ -1,12 +1,23 @@
 // app/api/clusters/running/route.ts
 
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server'
-
+interface Cluster {
+    cluster_name: string;
+    instance_type: string;
+    region: string;
+    user_id: string;
+    gpu: boolean;
+    cpu: boolean;
+    launched_at: string;
+    status: string;
+  }
+  let clusters: Cluster[] = [];
 // In-memory store (used by deploy, delete, running APIs)
-let clusters: any[] = []
+
 
 // Handle GET (fetch all)
-export async function GET(req: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     message: 'Successfully fetched running clusters.',
     clusters,

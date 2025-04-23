@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Shared in-memory store
-let clusterStore: any[] = [];
+// In-memory store scoped inside this file (not exported)
+interface Cluster {
+    cluster_name: string;
+    instance_type: string;
+    region: string;
+    user_id: string;
+    gpu: boolean;
+    cpu: boolean;
+    launched_at: string;
+    status: string;
+  }
+  const localClusterStore: Cluster[] = [];
+
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
     const {
       cluster_name,
       instance_type,
@@ -16,7 +26,6 @@ export async function POST(request: NextRequest) {
       gpu,
     } = body;
 
-    // Track missing fields
     const missingFields = [];
     if (!cluster_name) missingFields.push("cluster_name");
     if (!instance_type) missingFields.push("instance_type");
@@ -27,30 +36,28 @@ export async function POST(request: NextRequest) {
 
     if (missingFields.length > 0) {
       return NextResponse.json(
-        {
-          error: "Missing required fields",
-          missing: missingFields,
-        },
+        { error: "Missing required fields", missing: missingFields },
         { status: 400 }
       );
     }
 
-    const newCluster = {
+    // Simulate storing the cluster
+    const cluster = {
       cluster_name,
       instance_type,
       region,
       user_id,
-      gpu,
       cpu,
+      gpu,
       status: "pending",
       launched_at: new Date().toISOString(),
     };
 
-    clusterStore.push(newCluster);
+    localClusterStore.push(cluster);
 
     return NextResponse.json({
       message: "Cluster deployment initiated successfully.",
-      data: newCluster,
+      data: cluster,
     });
   } catch (error) {
     return NextResponse.json(
@@ -62,5 +69,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-export { clusterStore };
