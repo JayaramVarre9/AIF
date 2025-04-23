@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ interface Cluster {
 interface ClusterUser {
   full_name: string;
   email: string;
-  role: string;
+  password: string;
   created_at: string;
 }
 
@@ -40,10 +41,10 @@ export default function ClusterPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('Viewer');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     async function fetchClusters() {
@@ -88,7 +89,7 @@ export default function ClusterPage() {
     const newUser: ClusterUser = {
       full_name: fullName,
       email,
-      role,
+      password,
       created_at: new Date().toISOString(),
     };
 
@@ -106,14 +107,16 @@ export default function ClusterPage() {
     setIsAddUserOpen(false);
     setFullName('');
     setEmail('');
-    setRole('Viewer');
+    setPassword('');
   };
 
   return (
     <div className="px-4 sm:px-8 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Active Clusters</h1>
-        <Button>Deploy New Cluster</Button>
+        <Button onClick={() => router.push('/')}>
+             Deploy New Cluster
+        </Button>
       </div>
 
       <div className="mb-6">
@@ -206,7 +209,7 @@ export default function ClusterPage() {
               <h3 className="font-semibold text-sm mb-2">Users</h3>
               <ul className="list-disc pl-5 space-y-1 text-sm">
                 {selectedCluster.users.map((user, idx) => (
-                  <li key={idx}>{user.full_name} ({user.role})</li>
+                  <li key={idx}>{user.full_name} ({user.email})</li>
                 ))}
               </ul>
             </div>
@@ -243,12 +246,12 @@ export default function ClusterPage() {
               />
             </div>
             <div>
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
-                id="role"
+                id="password"
                 type="text"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div className="flex justify-end">

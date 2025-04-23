@@ -11,6 +11,7 @@ const cpuTypes = ["t2.micro", "t2.medium", "t2.large"];
 const gpuTypes = ["NVIDIA T4", "NVIDIA A100", "NVIDIA V100"];
 
 export default function DeployCluster() {
+  const [cpuEnabled, setCpuEnabled] = useState(false);
   const [gpuEnabled, setGpuEnabled] = useState(false);
 
   return (
@@ -26,14 +27,24 @@ export default function DeployCluster() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#233A77]">CPU Instance Type</label>
-              <Select defaultValue="" className="bg-white border-[#BFBBBF]">
-                <SelectItem value="" disabled>Select CPU instance type</SelectItem>
-                {cpuTypes.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </Select>
-            </div>
+        <label className="inline-flex items-center space-x-2 text-[#233A77]">
+          <Checkbox onCheckedChange={(checked) => setCpuEnabled(!!checked)} />
+          <span>Enable CPU Instance</span>
+        </label>
+        {cpuEnabled && (
+          <div className="mt-2">
+            <label className="block text-sm font-medium mb-1 text-[#233A77]">
+              CPU Instance Type
+            </label>
+            <Select defaultValue="" className="bg-white border-[#BFBBBF]">
+              <SelectItem value="" disabled>Select CPU instance type</SelectItem>
+              {cpuTypes.map((type) => (
+                <SelectItem key={type} value={type}>{type}</SelectItem>
+              ))}
+            </Select>
+          </div>
+        )}
+      </div>
 
             <div>
               <label className="inline-flex items-center space-x-2 text-[#233A77]">
