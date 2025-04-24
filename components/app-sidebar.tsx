@@ -43,14 +43,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavMain
             items={[
               {
-                title: "Dashboard",
+                title: "Home",
                 url: "/dashboard",
                 icon: SquareTerminal,
                 isActive: true,
                 items: [
                   { title: "Clusters", url: "/cluster" },
-                  { title: "Activity", url: "#" },
-                  { title: "Settings", url: "#" },
+                  { title: "Activity", url: "/logs" },
+                  { title: "Dashboard", url: "/dashboard" },
                 ],
               },
               {
@@ -59,7 +59,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 icon: Bot,
                 items: [
                   { title: "Logs", url: "/logs" },
-                  { title: "Resources Running", url: "#" },
+                  { title: "Resources Running", url: "/cluster" },
                   { title: "View Status", url: "#" },
                 ],
               },
