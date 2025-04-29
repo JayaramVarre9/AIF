@@ -18,6 +18,18 @@ export default function DeployCluster() {
   const [clusterRegion, setClusterRegion] = useState("");
   const [s3BucketName, setS3BucketName] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  interface ClusterDeployPayload {
+    cluster_name: string;
+    subdomain_name: string;
+    cpu_instance_type?: string;
+    enable_gpu_instance?: boolean;
+    gpu_instance_type?: string;
+    disk_size?: string;
+    db_class?: string;
+    cluster_region?: string;
+    s3_bucket_name?: string;
+  }
 
   const handleDeploy = async () => {
     if (!clusterName || !subdomainName) {
@@ -27,11 +39,10 @@ export default function DeployCluster() {
       return;
     }
 
-    const payload: any = {
-      cluster_name: clusterName,
-      subdomain_name: subdomainName,
-    };
-
+  const payload: ClusterDeployPayload = {
+  cluster_name: clusterName,
+  subdomain_name: subdomainName,
+};
     if (cpuEnabled) {
       payload.cpu_instance_type = cpuInstanceType;
     }
