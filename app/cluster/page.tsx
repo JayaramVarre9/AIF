@@ -11,18 +11,25 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+
+interface ClusterUser {
+  full_name: string;
+  email: string;
+  password: string;
+  created_at: string;
+}
 
 interface Cluster {
   cluster_name: string;
   launched_at: string;
   status: string;
   version: string;
-  region: string,
-  users: string,
+  region: string;
+  users: ClusterUser[];
   endpoint: string;
   cpu: string;
   gpu: string;
-  //users?: ClusterUser[];
 }
 
 export default function ClusterPage() {
@@ -30,12 +37,10 @@ export default function ClusterPage() {
   const [search, setSearch] = useState('');
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [pendingDeleteCluster, setPendingDeleteCluster] = useState<Cluster | null>(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  //const router = useRouter();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,10 +60,10 @@ export default function ClusterPage() {
           status: item.status || 'unknown',
           version: item.version || '',
           endpoint: item.endpoint || '',
-          cpu: item.cpu || '',    // ✅ Direct assignment without === 'Yes'
+          cpu: item.cpu || '',
           gpu: item.gpu || '',
           region: item.region || '',
-          users: item.users || '', 
+          users: [],
         }));
 
         console.log('Parsed Clusters:', parsedClusters);
@@ -75,8 +80,34 @@ export default function ClusterPage() {
     cluster.cluster_name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleAddUser = () => {
+    if (!selectedCluster) return;
+
+    const newUser: ClusterUser = {
+      full_name: fullName,
+      email,
+      password,
+      created_at: new Date().toISOString(),
+    };
+
+    setClusters((prev) =>
+      prev.map((cluster) =>
+        cluster.cluster_name === selectedCluster.cluster_name
+          ? {
+              ...cluster,
+              users: [...(cluster.users || []), newUser],
+            }
+          : cluster
+      )
+    );
+
+    setIsAddUserOpen(false);
+    setFullName('');
+    setEmail('');
+    setPassword('');
+  };
+
   const handleDelete = async (name: string) => {
-    setIsDeleting(true);
     try {
       const res = await fetch(`/api/clusters/running?name=${name}`, {
         method: 'DELETE',
@@ -84,15 +115,12 @@ export default function ClusterPage() {
 
       if (res.ok) {
         setClusters((prev) => prev.filter((c) => c.cluster_name !== name));
-        setIsDialogOpen(false);
-        setSelectedCluster(null);
+        setConfirmDeleteOpen(false);
       } else {
         console.error('Failed to delete cluster');
       }
     } catch (error) {
       console.error('Error deleting cluster:', error);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -146,19 +174,37 @@ export default function ClusterPage() {
                 >
                   Manage
                 </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCluster(cluster);
+                    setIsAddUserOpen(true);
+                  }}
+                >
+                  Add User
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    setPendingDeleteCluster(cluster);
+                    setConfirmDeleteOpen(true);
+                  }}
+                >
+                  Delete
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Manage Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Manage Cluster: {selectedCluster?.cluster_name}</DialogTitle>
-            <DialogDescription>
-              Version: {selectedCluster?.version}
-            </DialogDescription>
+            <DialogDescription>Version: {selectedCluster?.version}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">
             <p>Status: <strong>{selectedCluster?.status}</strong></p>
@@ -166,7 +212,84 @@ export default function ClusterPage() {
             <p>Endpoint: {selectedCluster?.endpoint}</p>
             <p>CPU Nodes Present: {selectedCluster?.cpu}</p>
             <p>GPU Nodes Present: {selectedCluster?.gpu}</p>
-            <p>Cognito Users: {selectedCluster?.users}</p>
+            {selectedCluster && selectedCluster.users && selectedCluster.users.length > 0 && (
+  <>
+    <h3 className="pt-4 font-semibold">Users</h3>
+    <ul className="list-disc pl-5">
+      {selectedCluster.users.map((user, idx) => (
+        <li key={idx}>
+          {user.full_name} ({user.email})
+        </li>
+      ))}
+    </ul>
+  </>
+)}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add User to {selectedCluster?.cluster_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleAddUser}>Add User</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{' '}
+              <strong>{pendingDeleteCluster?.cluster_name}</strong>? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (pendingDeleteCluster) {
+                  handleDelete(pendingDeleteCluster.cluster_name);
+                }
+              }}
+            >
+              Confirm Delete
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

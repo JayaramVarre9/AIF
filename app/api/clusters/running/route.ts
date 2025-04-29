@@ -5,9 +5,20 @@ import { Sha256 } from "@aws-crypto/sha256-js";
 import { defaultProvider } from "@aws-sdk/credential-provider-node"; // uses env vars
 //import { parseUrl } from "@aws-sdk/url-parser";
 
-export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest) {
+export const dynamic = "force-dynamic";
+interface AwsClusterItem {
+    name: string;
+    status: string;
+    region?: string;
+    createdAt: string;
+    version: string;
+    endpoint: string;
+    CPU?: any;  // You can further improve this if you know the type
+    GPU?: any;
+    cognito_users?: any;
+  }
+export async function GET() {
   try {
     //const region = "us-east-1";
     //const endpoint = "https://buds86mpe8.execute-api.us-east-1.amazonaws.com/default/AIFlexListEKS";
@@ -42,17 +53,17 @@ export async function GET(_req: NextRequest) {
       const data = await awsResponse.json();
       
 
-    const clusters = (data?.List_of_clusters_clusters || []).map((item: any) => ({
-      cluster_name: item.name,
-      status: item.status?.toLowerCase(),
-      region:item.region,
-      launched_at: item.createdAt,
-      version: item.version,
-      endpoint: item.endpoint,
-      cpu:item.CPU,
-      gpu:item.GPU,
-      users:item.cognito_users,
-    }));
+    const clusters = (data?.List_of_clusters_clusters || []).map((item: AwsClusterItem) => ({
+        cluster_name: item.name,
+        status: item.status?.toLowerCase(),
+        region: item.region,
+        launched_at: item.createdAt,
+        version: item.version,
+        endpoint: item.endpoint,
+        cpu: item.CPU,
+        gpu: item.GPU,
+        users: item.cognito_users,
+      }));
 
     return NextResponse.json({ message: "Fetched clusters", clusters });
   } catch (error) {
