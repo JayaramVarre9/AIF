@@ -54,17 +54,17 @@ export default function ClusterPage() {
 
         const clustersList = data.clusters || [];
 
-        const parsedClusters: Cluster[] = clustersList.map((item: any) => ({
-          cluster_name: item.cluster_name || '',
-          launched_at: item.launched_at ? item.launched_at.replace(' ', 'T') : '',
-          status: item.status || 'unknown',
-          version: item.version || '',
-          endpoint: item.endpoint || '',
-          cpu: item.cpu || '',
-          gpu: item.gpu || '',
-          region: item.region || '',
-          users: [],
-        }));
+        const parsedClusters: Cluster[] = clustersList.map((item: Partial<Cluster>) => ({
+            cluster_name: item.cluster_name || '',
+            launched_at: item.launched_at ? item.launched_at.replace(' ', 'T') : '',
+            status: item.status || 'unknown',
+            version: item.version || '',
+            endpoint: item.endpoint || '',
+            cpu: item.cpu || '',
+            gpu: item.gpu || '',
+            region: item.region || '',
+            users: [],
+          }));
 
         console.log('Parsed Clusters:', parsedClusters);
         setClusters(parsedClusters);

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { SignatureV4 } from "@aws-sdk/signature-v4";
 import { HttpRequest } from "@aws-sdk/protocol-http";
 import { Sha256 } from "@aws-crypto/sha256-js";
@@ -14,9 +14,9 @@ interface AwsClusterItem {
     createdAt: string;
     version: string;
     endpoint: string;
-    CPU?: any;  // You can further improve this if you know the type
-    GPU?: any;
-    cognito_users?: any;
+    CPU?: string;  // You can further improve this if you know the type
+    GPU?: string;
+    cognito_users: string[];
   }
 export async function GET() {
   try {
