@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 interface ClusterUser {
   full_name: string;
   email: string;
