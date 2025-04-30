@@ -141,9 +141,16 @@ export default function ClusterPage() {
           className="max-w-sm"
         />
       </div>
-         <pre className="bg-gray-100 text-sm p-4">
+
+
+
+         {/*<pre className="bg-gray-100 text-sm p-4">  //******Debugger *******
                 {JSON.stringify(clusters, null, 2)}
-         </pre>
+         </pre>*/}
+      
+      
+      
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredClusters.map((cluster, index) => (
           <Card key={index}>
