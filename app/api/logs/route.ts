@@ -1,85 +1,63 @@
-import { NextRequest, NextResponse } from "next/server"
+// File: app/api/logs/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { SignatureV4 } from '@aws-sdk/signature-v4';
+import { HttpRequest } from '@aws-sdk/protocol-http';
+import { Sha256 } from '@aws-crypto/sha256-js';
+import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
-export async function GET(request: NextRequest) {
+export const dynamic = 'force-dynamic';
+
+export async function GET(_req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    // const { searchParams } = new URL(req.url);
+    // const logStreamName = searchParams.get('log_stream_name');
 
-    const type = searchParams.get("type") // cluster, ec2, user
-    const id = searchParams.get("id") // optional: filter by resource ID
-    const start = searchParams.get("start") // optional: ISO date string
-    const end = searchParams.get("end") // optional: ISO date string
+    // if (!logStreamName || typeof logStreamName !== 'string') {
+    //   return NextResponse.json({ error: 'Missing or invalid log_stream_name' }, { status: 400 });
+    // }
 
-    if (!type) {
+    const logStreamName = 'ai-flex-shreyas';
+
+    const signer = new SignatureV4({
+      credentials: defaultProvider(),
+      region: 'us-east-1',
+      service: 'execute-api',
+      sha256: Sha256,
+    });
+
+    const encodedPath = `/default/AIFlex_Fetch_Logs?log_stream_name=${encodeURIComponent(logStreamName)}`;
+
+    const unsignedRequest = new HttpRequest({
+      method: 'GET',
+      protocol: 'https:',
+      hostname: 'buds86mpe8.execute-api.us-east-1.amazonaws.com',
+      path: encodedPath,
+      headers: {
+        host: 'buds86mpe8.execute-api.us-east-1.amazonaws.com',
+      },
+    });
+
+    const signedRequest = await signer.sign(unsignedRequest);
+
+    const awsResponse = await fetch(`https://${signedRequest.hostname}${signedRequest.path}`, {
+      method: signedRequest.method,
+      headers: signedRequest.headers,
+    });
+
+    if (!awsResponse.ok) {
       return NextResponse.json(
-        { error: "Missing required query parameter: type" },
-        { status: 400 }
-      )
+        { error: 'Failed to fetch logs from backend' },
+        { status: awsResponse.status }
+      );
     }
 
-    // Simulated logs
-    const logs = {
-      cluster: [
-        {
-          id: "c1",
-          cluster_name: "aif-demo1",
-          action: "Deployed",
-          timestamp: "2025-04-17T09:32:00Z",
-        },
-        {
-          id: "c2",
-          cluster_name: "aif-demo2",
-          action: "Deleted",
-          timestamp: "2025-04-15T18:10:00Z",
-        },
-      ],
-      ec2: [
-        {
-          id: "e1",
-          instance_id: "i-123456789",
-          action: "Started",
-          timestamp: "2025-04-16T16:00:00Z",
-        },
-        {
-          id: "e2",
-          instance_id: "i-987654321",
-          action: "Stopped",
-          timestamp: "2025-04-14T12:30:00Z",
-        },
-      ],
-      user: [
-        {
-          id: "u1",
-          username: "newuser1",
-          action: "Added to aif-demo1",
-          role: "admin",
-          timestamp: "2025-04-16T14:45:00Z",
-        },
-      ],
-    }
-
-    const allLogs = logs[type as keyof typeof logs] || []
-
-    // Filter by id (if provided)
-    let filteredLogs = id ? allLogs.filter((log) => log.id === id) : allLogs
-
-    // Filter by date range
-    if (start || end) {
-      const startDate = start ? new Date(start) : null
-      const endDate = end ? new Date(end) : null
-
-      filteredLogs = filteredLogs.filter((log) => {
-        const logDate = new Date(log.timestamp)
-        if (startDate && logDate < startDate) return false
-        if (endDate && logDate > endDate) return false
-        return true
-      })
-    }
-
-    return NextResponse.json({ type, logs: filteredLogs })
+    const data = await awsResponse.json();
+    return NextResponse.json(data);
   } catch (error) {
+    console.error('Log fetch error:', error);
     return NextResponse.json(
-      { error: "Failed to fetch logs", details: (error as Error).message },
+      { error: 'Server error', details: (error as Error).message },
       { status: 500 }
-    )
+    );
   }
 }
