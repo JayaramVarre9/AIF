@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import router from 'next/router';
+import { useRouter } from 'next/router';
 interface ClusterUser {
   full_name: string;
   email: string;
@@ -124,15 +124,13 @@ export default function ClusterPage() {
       console.error('Error deleting cluster:', error);
     }
   };
-
+  const router = useRouter();
   return (
     <div className="px-4 sm:px-8 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Active Clusters</h1>
-        const router = useRouter();
-
         <Button onClick={() => router.push('/')}>
-        Deploy New Cluster
+          Deploy New Cluster
         </Button>
       </div>
 
