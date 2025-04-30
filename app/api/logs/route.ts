@@ -1,5 +1,5 @@
 // File: app/api/logs/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { SignatureV4 } from '@aws-sdk/signature-v4';
 import { HttpRequest } from '@aws-sdk/protocol-http';
 import { Sha256 } from '@aws-crypto/sha256-js';
