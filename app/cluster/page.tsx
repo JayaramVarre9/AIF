@@ -51,8 +51,9 @@ export default function ClusterPage() {
         const res = await fetch('/api/clusters/running');
         const data = await res.json();
         console.log('Fetched Data:', data);
+        
 
-        const clustersList = data.clusters || [];
+        const clustersList = Array.isArray(data) ? data : data.clusters || [];
 
         const parsedClusters: Cluster[] = clustersList.map((item: Partial<Cluster>) => ({
             cluster_name: item.cluster_name || '',
@@ -140,7 +141,9 @@ export default function ClusterPage() {
           className="max-w-sm"
         />
       </div>
-
+         <pre className="bg-gray-100 text-sm p-4">
+                {JSON.stringify(clusters, null, 2)}
+         </pre>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredClusters.map((cluster, index) => (
           <Card key={index}>
@@ -159,9 +162,9 @@ export default function ClusterPage() {
               </div>
               <div className="text-sm space-y-1">
                 <div className="text-gray-600">🔹 Region: {cluster.region}</div>
-                <div className="text-gray-600">🕒 Created: {new Date(cluster.launched_at).toLocaleDateString()}</div>
-                <div className="text-gray-600">💻 CPU: {cluster.cpu}</div> 
-                <div className="text-gray-600">🎮 GPU: {cluster.gpu}</div>
+                <div className="text-gray-600">🕒 Created: {typeof window !== 'undefined' && new Date(cluster.launched_at).toLocaleDateString()}</div>
+                <div className="text-gray-600">💻 CPU: {cluster.cpu || 'N/A'}</div> 
+                <div className="text-gray-600">🎮 GPU: {cluster.gpu || 'N/A'}</div>
               </div>
               <div className="flex gap-3 pt-2">
                 <Button
@@ -207,23 +210,30 @@ export default function ClusterPage() {
             <DialogDescription>Version: {selectedCluster?.version}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">
-            <p>Status: <strong>{selectedCluster?.status}</strong></p>
-            <p>Launched at: {new Date(selectedCluster?.launched_at || '').toLocaleString()}</p>
-            <p>Endpoint: {selectedCluster?.endpoint}</p>
-            <p>CPU Nodes Present: {selectedCluster?.cpu}</p>
-            <p>GPU Nodes Present: {selectedCluster?.gpu}</p>
+            <p>Status: <strong>{selectedCluster?.status || 'Unknown'}</strong></p>
+
+            <p>Launched at:{' '}
+                 {typeof window !== 'undefined' && selectedCluster?.launched_at
+                 ? new Date(selectedCluster.launched_at).toLocaleDateString()
+                 : 'N/A'}
+            </p>
+
+             <p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>
+             <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
+            <p>GPU Nodes Present: {selectedCluster?.gpu || 'N/A'}</p>
+
             {selectedCluster && selectedCluster.users && selectedCluster.users.length > 0 && (
   <>
-    <h3 className="pt-4 font-semibold">Users</h3>
-    <ul className="list-disc pl-5">
-      {selectedCluster.users.map((user, idx) => (
-        <li key={idx}>
-          {user.full_name} ({user.email})
-        </li>
-      ))}
-    </ul>
-  </>
-)}
+            <h3 className="pt-4 font-semibold">Users</h3>
+            <ul className="list-disc pl-5">
+            {selectedCluster.users.map((user, idx) => (
+                <li key={idx}>
+                {user.full_name} ({user.email})
+                </li>
+            ))}
+            </ul>
+        </>
+        )}
           </div>
         </DialogContent>
       </Dialog>
