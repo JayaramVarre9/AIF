@@ -19,7 +19,7 @@ export default function LogsPage() {
   //const [clusters, setClusters] = useState<Cluster[]>([]);
   const [selectedCluster, setSelectedCluster] = useState<string>('');
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [clusters] = useState([{ cluster_name: 'ai-flex-shreyas' }]);
+  const [clusters] = useState<Cluster[]>([{ cluster_name: 'ai-flex-shreyas' }]);
   // Fetch clusters
   /*useEffect(() => {
     const fetchClusters = async () => {

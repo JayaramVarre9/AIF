@@ -7,7 +7,7 @@ import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     // const { searchParams } = new URL(req.url);
     // const logStreamName = searchParams.get('log_stream_name');
