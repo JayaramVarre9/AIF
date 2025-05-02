@@ -3,6 +3,7 @@ import { useState } from 'react';
 interface LogEntry {
   timestamp: number;
   message: string;
+  status?: string;
 }
 
 interface ClusterLogsTableProps {
@@ -21,15 +22,22 @@ export function ClusterLogsTable({ logs, clusterName }: ClusterLogsTableProps) {
             <tr>
               <th className="p-3">Timestamp</th>
               <th className="p-3">Cluster Name</th>
+              <th className="p-3">Status</th>
               <th className="p-3">Log Message</th>
             </tr>
           </thead>
           <tbody>
             {logs.length > 0 ? (
               logs.map((log, idx) => (
-                <tr key={idx} className="border-b">
+                <tr
+                  key={idx}
+                  className={`border-b ${log.status === 'error' ? 'bg-red-100' : ''}`}
+                >
                   <td className="p-3">{new Date(log.timestamp).toLocaleString()}</td>
                   <td className="p-3">{clusterName}</td>
+                  <td className={`p-3 font-semibold ${log.status === 'error' ? 'text-red-700' : 'text-green-700'}`}>
+                    {log.status}
+                  </td>
                   <td
                     className="p-3 cursor-pointer text-blue-600 hover:underline max-w-xs truncate"
                     title="Click to view full message"
@@ -43,7 +51,7 @@ export function ClusterLogsTable({ logs, clusterName }: ClusterLogsTableProps) {
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="p-3 text-center text-gray-500">
+                <td colSpan={4} className="p-3 text-center text-gray-500">
                   No logs available
                 </td>
               </tr>

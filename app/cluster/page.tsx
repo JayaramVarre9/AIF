@@ -153,11 +153,14 @@ export default function ClusterPage() {
       
       
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredClusters.map((cluster, index) => (
-          <Card key={index}>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex justify-between items-center">
+      {filteredClusters.length === 0 ? (
+  <p className="text-gray-500 text-center mt-8">No clusters are currently running.</p>
+) : (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {filteredClusters.map((cluster, index) => (
+      <Card key={index}>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex justify-between items-center">
                 <h2 className="text-lg font-semibold">{cluster.cluster_name}</h2>
                 <span
                   className={`text-xs px-2 py-1 rounded-full ${
@@ -206,10 +209,11 @@ export default function ClusterPage() {
                   Delete
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+)}
 
       {/* Manage Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

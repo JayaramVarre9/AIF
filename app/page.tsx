@@ -18,7 +18,10 @@ export default function DeployCluster() {
   const [clusterRegion, setClusterRegion] = useState("");
   const [s3BucketName, setS3BucketName] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
-  
+  const [clusterNameError, setClusterNameError] = useState("");
+  const [subdomainError, setSubdomainError] = useState("");
+
+
   interface ClusterDeployPayload {
     cluster_name: string;
     subdomain_name: string;
@@ -32,17 +35,35 @@ export default function DeployCluster() {
   }
 
   const handleDeploy = async () => {
-    if (!clusterName || !subdomainName) {
-      alert(
-        `Missing required fields:\n${!clusterName ? "- Cluster Name\n" : ""}${!subdomainName ? "- Subdomain Name" : ""}`
-      );
-      return;
-    }
+    setClusterNameError(""); // reset error
 
-  const payload: ClusterDeployPayload = {
-  cluster_name: clusterName,
-  subdomain_name: subdomainName,
-};
+    setClusterNameError("");
+setSubdomainError("");
+
+if (!clusterName) {
+  setClusterNameError("Cluster Name is required.");
+  return;
+}
+if (!subdomainName) {
+  setSubdomainError("Subdomain Name is required.");
+  return;
+}
+if (clusterName.length < 1 || clusterName.length > 19) {
+  setClusterNameError("Cluster Name must be between 1 and 19 characters.");
+  return;
+}
+
+const expectedSubdomain = `platform-${clusterName}.attainx-aifactory.com`;
+if (subdomainName !== expectedSubdomain) {
+  setSubdomainError(`Subdomain must be exactly: ${expectedSubdomain}`);
+  return;
+}
+
+    const payload: ClusterDeployPayload = {
+      cluster_name: clusterName,
+      subdomain_name: subdomainName,
+    };
+
     if (cpuEnabled) {
       payload.cpu_instance_type = cpuInstanceType;
     }
@@ -85,10 +106,18 @@ export default function DeployCluster() {
               <label className="block text-sm font-medium mb-1 text-[#233A77]">Cluster Name</label>
               <Input
                 placeholder="my-ai-cluster"
-                className="bg-white border-[#BFBBBF]"
+                className={`bg-white border ${clusterNameError ? "border-red-500" : "border-[#BFBBBF]"}`}
                 value={clusterName}
-                onChange={(e) => setClusterName(e.target.value)}
+                onChange={(e) => {
+                  setClusterName(e.target.value);
+                  if (e.target.value.length >= 1 && e.target.value.length <= 19) {
+                    setClusterNameError(""); // clear error if valid
+                  }
+                }}
               />
+              {clusterNameError && (
+                <p className="text-red-600 text-sm mt-1">{clusterNameError}</p>
+              )}
             </div>
 
             <div>
@@ -98,9 +127,7 @@ export default function DeployCluster() {
               </label>
               {cpuEnabled && (
                 <div className="mt-2">
-                  <label className="block text-sm font-medium mb-1 text-[#233A77]">
-                    CPU Instance Type
-                  </label>
+                  <label className="block text-sm font-medium mb-1 text-[#233A77]">CPU Instance Type</label>
                   <Input
                     placeholder="e.g., t2.medium"
                     className="bg-white border-[#BFBBBF]"
@@ -142,14 +169,21 @@ export default function DeployCluster() {
             <div>
               <label className="block text-sm font-medium mb-1 text-[#233A77]">Subdomain Name</label>
               <Input
-                placeholder="my-cluster"
-                className="bg-white border-[#BFBBBF]"
-                value={subdomainName}
-                onChange={(e) => setSubdomainName(e.target.value)}
-              />
-              <p className="text-xs mt-1 text-[#595959]">
-                Your cluster will be available at <strong>subdomain.aifactory.attainx.com</strong>
-              </p>
+                  placeholder="e.g., platform-ai-flex.attainx-aifactory.com"
+                  className={`bg-white border ${subdomainError ? "border-red-500" : "border-[#BFBBBF]"}`}
+                  value={subdomainName}
+                  onChange={(e) => {
+                    setSubdomainName(e.target.value);
+                    if (subdomainError) setSubdomainError(""); // Clear error on input
+                  }}
+                />
+                {subdomainError && (
+                  <p className="text-red-600 text-sm mt-1">{subdomainError}</p>
+                )}
+                <p className="text-xs mt-1 text-[#595959]">
+                  Format: <strong>platform-{`<cluster_name>`}.attainx-aifactory.com</strong>
+                </p>
+
             </div>
 
             <div>
