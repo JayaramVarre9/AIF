@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { signIn, completeNewPasswordChallenge, forgotPassword, confirmForgotPassword } from "@/lib/authService";
 import { setCookie } from "nookies";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,8 +22,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     const token = document.cookie.includes("accessToken");
-    if (token) router.push("/dashboard");
-  }, []);
+    if (token) router.push("/");
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,8 +43,12 @@ export default function LoginPage() {
         router.push("/");
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
     }
   };
 
@@ -61,8 +66,12 @@ export default function LoginPage() {
         router.push("/");
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err.message || "Password reset failed");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
     }
   };
 
@@ -71,8 +80,12 @@ export default function LoginPage() {
     try {
       await forgotPassword(username);
       setForgotStep("code");
-    } catch (err: any) {
-      setError(err.message || "Failed to send reset code");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
     }
   };
 
@@ -82,8 +95,12 @@ export default function LoginPage() {
       await confirmForgotPassword(username, resetCode, resetNewPassword);
       alert("Password reset successful. Please login.");
       setForgotStep("none");
-    } catch (err: any) {
-      setError(err.message || "Reset failed");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error");
+      }
     }
   };
 
@@ -91,8 +108,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#233A77] via-[#1E2E5A] to-[#C51E26] px-4">
       <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
       <div className="text-center mb-6">
-  <img src="/attainxname.svg" alt="AttainX Logo" className="w-28 mx-auto mb-2" />
-  <h2 className="text-2xl font-bold text-[#233A77]">AI - Flex</h2>
+      <Image
+  src="/attainxname.svg"
+  alt="AttainX Logo"
+  width={112}
+  height={32}
+  className="mx-auto mb-2"
+/>
+    <h2 className="text-2xl font-bold text-[#233A77]">AI - Flex</h2>
 </div>
 
         <h2 className="text-xl font-bold text-center text-[#233A77] mb-4">
