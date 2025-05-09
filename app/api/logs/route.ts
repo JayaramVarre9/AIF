@@ -16,7 +16,7 @@ export async function GET() {
     //   return NextResponse.json({ error: 'Missing or invalid log_stream_name' }, { status: 400 });
     // }
 
-    const logStreamName = 'ai-flex-shreyas';
+    const logStreamName = 'custo_ec2_test';
 
     const signer = new SignatureV4({
       credentials: defaultProvider(),

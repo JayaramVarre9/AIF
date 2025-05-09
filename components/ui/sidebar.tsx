@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import LogoutForm from "@/components/LogoutButton";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -755,11 +756,10 @@ export function SidebarLayout() {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-[#BFBBBF]">
-        <button className="w-full rounded bg-[#C51E26] px-4 py-2 text-white hover:bg-[#A3151B]">
-          Logout
-        </button>
+  <LogoutForm />
+</div>
       </div>
-    </div>
+    
   );
 }
 

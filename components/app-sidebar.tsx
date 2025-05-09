@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   BookOpen,
   Bot,
@@ -8,19 +8,21 @@ import {
   PieChart,
   Settings2,
   SquareTerminal,
-} from "lucide-react"
+} from "lucide-react";
+import Image from "next/image";
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/nav-main";
+import { NavProjects } from "@/components/nav-projects";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import Image from "next/image"
+} from "@/components/ui/sidebar";
+
+import LogoutButton from "@/components/LogoutButton"; // ✅ Import here
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -37,7 +39,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
 
-      {/* Scrollable SidebarContent with scrollbar hidden */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <SidebarContent>
           <NavMain
@@ -96,12 +97,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </div>
 
       <SidebarFooter>
-        <NavUser user={{ name: "AI-Factroy", email: "", avatar: "" }} />
+        <NavUser user={{ name: "AI-Factory", email: "", avatar: "" }} />
+        <LogoutButton /> {/* ✅ Add this here */}
       </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
-export { Sidebar }
-
+export { Sidebar };

@@ -21,7 +21,7 @@ export default function LogsPage() {
 
   const [selectedCluster, setSelectedCluster] = useState<string>('');
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [clusters] = useState<Cluster[]>([{ cluster_name: 'ai-flex-shreyas' }]);
+  const [clusters] = useState<Cluster[]>([{ cluster_name: 'custo_ec2_test' }]);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedEventType, setSelectedEventType] = useState('all');
   const [startTime, setStartTime] = useState('');
@@ -155,7 +155,7 @@ export default function LogsPage() {
         </Button>
       </div>
 
-      <ClusterLogsTable logs={filteredLogs} clusterName={selectedCluster || 'ai-flex-shreyas'} />
+      <ClusterLogsTable logs={filteredLogs} clusterName={selectedCluster || 'custo_ec2_test'} />
     </div>
   );
 }
