@@ -10,9 +10,9 @@ import {
   } from "@aws-sdk/client-cognito-identity-provider";
   import CryptoJS from "crypto-js";
   const config = {
-    region: process.env.NEXT_PUBLIC_AWS_REGION!,
-    clientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!,
-    clientSecret: process.env.NEXT_PUBLIC_COGNITO_CLIENT_SECRET!,
+    region: process.env.AWS_REGION!,
+    clientId: process.env.COGNITO_CLIENT_ID!,
+    clientSecret: process.env.COGNITO_CLIENT_SECRET!,
   };
   if (!config.clientId || !config.clientSecret) {
     throw new Error("Missing Cognito client ID or client secret in environment variables");
