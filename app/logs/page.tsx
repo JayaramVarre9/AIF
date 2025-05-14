@@ -21,7 +21,6 @@ export default function LogsPage() {
 
   const [selectedCluster, setSelectedCluster] = useState<string>('');
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [clusters] = useState<Cluster[]>([{ cluster_name: 'custo_ec2_test' }]);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedEventType, setSelectedEventType] = useState('all');
   const [startTime, setStartTime] = useState('');
@@ -88,18 +87,13 @@ export default function LogsPage() {
       <h2 className="text-2xl font-semibold mb-4">AWS Cluster Activity Logs</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-        <select
-          className="border rounded px-3 py-2"
-          value={selectedCluster}
-          onChange={(e) => setSelectedCluster(e.target.value)}
-        >
-          <option value="">Select a cluster</option>
-          {clusters.map((cluster, idx) => (
-            <option key={idx} value={cluster.cluster_name}>
-              {cluster.cluster_name}
-            </option>
-          ))}
-        </select>
+      <input
+  type="text"
+  placeholder="Enter cluster name"
+  className="border rounded px-3 py-2"
+  value={selectedCluster}
+  onChange={(e) => setSelectedCluster(e.target.value)}
+/>
 
         <input
           type="datetime-local"
@@ -155,7 +149,7 @@ export default function LogsPage() {
         </Button>
       </div>
 
-      <ClusterLogsTable logs={filteredLogs} clusterName={selectedCluster || 'custo_ec2_test'} />
+      <ClusterLogsTable logs={filteredLogs} clusterName={selectedCluster} />
     </div>
   );
 }

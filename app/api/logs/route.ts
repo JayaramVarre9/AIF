@@ -1,5 +1,5 @@
 // File: app/api/logs/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { SignatureV4 } from '@aws-sdk/signature-v4';
 import { HttpRequest } from '@aws-sdk/protocol-http';
 import { Sha256 } from '@aws-crypto/sha256-js';
@@ -7,16 +7,14 @@ import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    // const { searchParams } = new URL(req.url);
-    // const logStreamName = searchParams.get('log_stream_name');
+    const { searchParams } = new URL(req.url);
+    const logStreamName = searchParams.get('log_stream_name');
 
-    // if (!logStreamName || typeof logStreamName !== 'string') {
-    //   return NextResponse.json({ error: 'Missing or invalid log_stream_name' }, { status: 400 });
-    // }
-
-    const logStreamName = 'custo_ec2_test';
+    if (!logStreamName || typeof logStreamName !== 'string') {
+      return NextResponse.json({ error: 'Missing or invalid log_stream_name' }, { status: 400 });
+    }
 
     const signer = new SignatureV4({
       credentials: defaultProvider(),

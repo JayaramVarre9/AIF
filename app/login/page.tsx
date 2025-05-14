@@ -138,7 +138,17 @@ export default function LoginPage() {
               <input type="password" className="w-full border border-gray-300 rounded p-2" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required />
             </div>
             <button type="submit" className="w-full bg-[#233A77] text-white font-semibold py-2 rounded">Reset Password</button>
-            <p onClick={() => setForgotStep("none")} className="text-xs text-blue-600 text-center pt-2 cursor-pointer">Back to login</p>
+            <p
+              onClick={() => {
+                setForgotStep("none");
+                setResetCode("");
+                setResetNewPassword("");
+                setError("");
+              }}
+              className="text-xs text-blue-600 text-center pt-2 cursor-pointer"
+            >
+              Back to login
+            </p>
           </form>
         ) : (
           <form
@@ -164,7 +174,19 @@ export default function LoginPage() {
             </button>
 
             {forgotStep === "none" && (
-              <p onClick={() => setForgotStep("email")} className="text-xs text-blue-700 text-center pt-2 cursor-pointer">Forgot Password?</p>
+              <p
+              onClick={() => {
+                setForgotStep("email");
+                setPassword("");
+                setError("");
+                setResetCode("");
+                setResetNewPassword("");
+                setError("");
+              }}
+              className="text-xs text-blue-700 text-center pt-2 cursor-pointer"
+            >
+              Forgot Password?
+            </p>
             )}
           </form>
         )}

@@ -14,7 +14,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 interface ClusterUser {
-  full_name: string;
+  user_name: string;
   email: string;
   password: string;
   created_at: string;
@@ -30,6 +30,7 @@ interface Cluster {
   endpoint: string;
   cpu: string;
   gpu: string;
+  instance_id: string; 
 }
 
 export default function ClusterPage() {
@@ -41,7 +42,7 @@ export default function ClusterPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [pendingDeleteCluster, setPendingDeleteCluster] = useState<Cluster | null>(null);
 
-  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -56,16 +57,17 @@ export default function ClusterPage() {
         const clustersList = Array.isArray(data) ? data : data.clusters || [];
 
         const parsedClusters: Cluster[] = clustersList.map((item: Partial<Cluster>) => ({
-            cluster_name: item.cluster_name || '',
-            launched_at: item.launched_at ? item.launched_at.replace(' ', 'T') : '',
-            status: item.status || 'unknown',
-            version: item.version || '',
-            endpoint: item.endpoint || '',
-            cpu: item.cpu || '',
-            gpu: item.gpu || '',
-            region: item.region || '',
-            users: [],
-          }));
+          cluster_name: item.cluster_name || '',
+          launched_at: item.launched_at ? item.launched_at.replace(' ', 'T') : '',
+          status: item.status || 'unknown',
+          version: item.version || '',
+          endpoint: item.endpoint || '',
+          cpu: item.cpu || '',
+          gpu: item.gpu || '',
+          region: item.region || '',
+          instance_id: item.instance_id || '', // ✅ Extract instance_id
+          users: [],
+        }));
 
         console.log('Parsed Clusters:', parsedClusters);
         setClusters(parsedClusters);
@@ -81,32 +83,57 @@ export default function ClusterPage() {
     cluster.cluster_name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!selectedCluster) return;
-
-    const newUser: ClusterUser = {
-      full_name: fullName,
+  
+    const payload = {
+      cluster_name: selectedCluster.cluster_name,
+      instance_id: selectedCluster.instance_id,
+      username,
       email,
       password,
-      created_at: new Date().toISOString(),
     };
-
-    setClusters((prev) =>
-      prev.map((cluster) =>
-        cluster.cluster_name === selectedCluster.cluster_name
-          ? {
-              ...cluster,
-              users: [...(cluster.users || []), newUser],
-            }
-          : cluster
-      )
-    );
-
-    setIsAddUserOpen(false);
-    setFullName('');
-    setEmail('');
-    setPassword('');
+  
+    try {
+      const res = await fetch('/api/clusters/user_creation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (res.ok) {
+        const newUser: ClusterUser = {
+          user_name: username,
+          email,
+          password,
+          created_at: new Date().toISOString(),
+        };
+  
+        setClusters((prev) =>
+          prev.map((cluster) =>
+            cluster.cluster_name === selectedCluster.cluster_name
+              ? {
+                  ...cluster,
+                  users: [...(cluster.users || []), newUser],
+                }
+              : cluster
+          )
+        );
+  
+        setIsAddUserOpen(false);
+        setUsername('');
+        setEmail('');
+        setPassword('');
+      } else {
+        console.error('Failed to add user');
+      }
+    } catch (error) {
+      console.error('Error adding user:', error);
+    }
   };
+  
 
   const handleDelete = async (name: string) => {
     try {
@@ -178,7 +205,7 @@ export default function ClusterPage() {
                 <div className="text-gray-600">💻 CPU: {cluster.cpu || 'N/A'}</div> 
                 <div className="text-gray-600">🎮 GPU: {cluster.gpu || 'N/A'}</div>
               </div>
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2"> 
                 <Button
                   size="sm"
                   variant="outline"
@@ -241,7 +268,7 @@ export default function ClusterPage() {
             <ul className="list-disc pl-5">
             {selectedCluster.users.map((user, idx) => (
                 <li key={idx}>
-                {user.full_name} ({user.email})
+                {user.user_name} ({user.email})
                 </li>
             ))}
             </ul>
@@ -259,11 +286,11 @@ export default function ClusterPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="username">User Name</Label>
               <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div>
