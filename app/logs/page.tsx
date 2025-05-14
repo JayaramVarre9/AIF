@@ -6,9 +6,6 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ClusterLogsTable } from '@/components/ClusterLogsTable';
 
-interface Cluster {
-  cluster_name: string;
-}
 
 interface LogEntry {
   timestamp: number;
