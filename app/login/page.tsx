@@ -54,9 +54,21 @@ export default function LoginPage() {
     }
   };
 
+  const checkUserExists = async (username: string) => {
+    const res = await fetch("/api/auth/check-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    });
+  
+    const data = await res.json();
+    return res.ok && data.exists;
+  };
+
   const handleNewPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
+    
     try {
       const res = await fetch("/api/auth/new-password", {
         method: "POST",
@@ -80,6 +92,11 @@ export default function LoginPage() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    const exists = await checkUserExists(username);
+  if (!exists) {
+    setError("User not found. Please sign up or check your email.");
+    return;
+  }
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -97,6 +114,11 @@ export default function LoginPage() {
 
   const handleConfirmReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    const exists = await checkUserExists(username);
+  if (!exists) {
+    setError("User not found. Please sign up or check your email.");
+    return;
+  }
     try {
       const res = await fetch("/api/auth/confirm-reset", {
         method: "POST",
@@ -113,9 +135,26 @@ export default function LoginPage() {
     }
   };
 
+  const handleBack = () => {
+    setForgotStep("none");
+    setResetCode("");
+    setResetNewPassword("");
+    setError("");
+    setPassword("");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#233A77] via-[#1E2E5A] to-[#C51E26] px-4">
-      <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
+      <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md relative">
+        {(forgotStep !== "none" || isNewPasswordRequired) && (
+          <button
+            onClick={handleBack}
+            className="absolute top-4 left-4 text-[#233A77] hover:text-[#1E2E5A] font-semibold cursor-pointer"
+          >
+            ← Back
+          </button>
+        )}
+
         <div className="text-center mb-6">
           <Image src="/attainxname.svg" alt="AttainX Logo" width={112} height={32} className="mx-auto mb-2" />
           <h2 className="text-2xl font-bold text-[#233A77]">AI - Flex</h2>
@@ -125,7 +164,6 @@ export default function LoginPage() {
           {isNewPasswordRequired ? "Set New Password" : forgotStep === "code" ? "Reset Password" : "Sign In"}
         </h2>
         {error && <p className="text-red-600 text-sm mb-3 text-center">{error}</p>}
-
 
         {forgotStep === "code" ? (
           <form onSubmit={handleConfirmReset} className="space-y-4">
@@ -138,17 +176,6 @@ export default function LoginPage() {
               <input type="password" className="w-full border border-gray-300 rounded p-2" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required />
             </div>
             <button type="submit" className="w-full bg-[#233A77] text-white font-semibold py-2 rounded">Reset Password</button>
-            <p
-              onClick={() => {
-                setForgotStep("none");
-                setResetCode("");
-                setResetNewPassword("");
-                setError("");
-              }}
-              className="text-xs text-blue-600 text-center pt-2 cursor-pointer"
-            >
-              Back to login
-            </p>
           </form>
         ) : (
           <form
@@ -175,18 +202,17 @@ export default function LoginPage() {
 
             {forgotStep === "none" && (
               <p
-              onClick={() => {
-                setForgotStep("email");
-                setPassword("");
-                setError("");
-                setResetCode("");
-                setResetNewPassword("");
-                setError("");
-              }}
-              className="text-xs text-blue-700 text-center pt-2 cursor-pointer"
-            >
-              Forgot Password?
-            </p>
+                onClick={() => {
+                  setForgotStep("email");
+                  setPassword("");
+                  setError("");
+                  setResetCode("");
+                  setResetNewPassword("");
+                }}
+                className="text-xs text-blue-700 text-center pt-2 cursor-pointer"
+              >
+                Forgot Password?
+              </p>
             )}
           </form>
         )}

@@ -12,7 +12,7 @@ export default function DeployCluster() {
   const [ec2InstanceName, setEc2InstanceName] = useState("");
   const [cpuEnabled, setCpuEnabled] = useState(true); // default enabled
   const [gpuEnabled, setGpuEnabled] = useState(false);
-  const [cpuInstanceType, setCpuInstanceType] = useState("t2.medium"); // default value
+  const [cpuInstanceType, setCpuInstanceType] = useState("t3a.large"); // default value
   const [gpuInstanceType, setGpuInstanceType] = useState("g4dn.xlarge");
   const [diskSize, setDiskSize] = useState("100");
   const [dbClass, setDbClass] = useState("db.t4g.micro");
@@ -24,19 +24,19 @@ export default function DeployCluster() {
   const [subdomainError, setSubdomainError] = useState("");
   const [ec2NameError, setEc2NameError] = useState("");
 
-  interface ClusterDeployPayload {
+  type ClusterDeployPayload = {
     cluster_name: string;
     ec2_name: string;
     subdomain_name: string;
     enable_cpu_image: boolean;
     enable_gpu_image: boolean;
-    cpu_instance_type: string | null;
-    gpu_instance_type: string | null;
     cluster_region: string;
     s3_bucket_name: string;
     disk_size: string;
     db_class: string;
-  }
+    cpu_instance_type?: string;
+    gpu_instance_type?: string;
+  };
 
   const validateName = (name: string, label: string, allowUnderscore = false): string => {
     if (!name) return `${label} is required.`;
@@ -70,13 +70,14 @@ export default function DeployCluster() {
       subdomain_name: subdomainName,
       enable_cpu_image: cpuEnabled,
       enable_gpu_image: gpuEnabled,
-      cpu_instance_type: cpuEnabled ? cpuInstanceType : null,
-      gpu_instance_type: gpuEnabled ? gpuInstanceType : null,
       cluster_region: clusterRegion,
       s3_bucket_name: s3BucketName,
       disk_size: diskSize,
       db_class: dbClass,
+      ...(cpuEnabled && { cpu_instance_type: cpuInstanceType }),
+      ...(gpuEnabled && { gpu_instance_type: gpuInstanceType }),
     };
+    
   
     try {
       const res = await fetch("/api/clusters/deploy", {
@@ -154,22 +155,16 @@ export default function DeployCluster() {
 
             {/* CPU Instance */}
             <div>
-              <label className="inline-flex items-center space-x-2 text-[#233A77]">
-                <Checkbox checked={cpuEnabled} onCheckedChange={(checked) => setCpuEnabled(!!checked)} />
-                <span>Enable CPU Instance</span>
-              </label>
-              {cpuEnabled && (
-                <div className="mt-2">
-                  <label className="block text-sm font-medium mb-1 text-[#233A77]">CPU Instance Type</label>
-                  <Input
-                    placeholder="t2.medium"
-                    className="bg-white border-[#BFBBBF]"
-                    value={cpuInstanceType}
-                    onChange={(e) => setCpuInstanceType(e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
+                <label className="block text-sm font-medium mb-1 text-[#233A77]">
+                  CPU Instance Type <span className="text-red-600">*</span>
+                </label>
+                <Input
+                  placeholder="t2.medium"
+                  className="bg-white border-[#BFBBBF]"
+                  value={cpuInstanceType}
+                  onChange={(e) => setCpuInstanceType(e.target.value)}
+                />
+              </div>
 
             {/* GPU Instance */}
             <div>
