@@ -10,7 +10,7 @@ export default function DeployCluster() {
   const [clusterName, setClusterName] = useState("");
   const [subdomainName, setSubdomainName] = useState("");
   const [ec2InstanceName, setEc2InstanceName] = useState("");
-  const [cpuEnabled, setCpuEnabled] = useState(true); // default enabled
+  //const [cpuEnabled, setCpuEnabled] = useState(true); // default enabled
   const [gpuEnabled, setGpuEnabled] = useState(false);
   const [cpuInstanceType, setCpuInstanceType] = useState("t3a.large"); // default value
   const [gpuInstanceType, setGpuInstanceType] = useState("g4dn.xlarge");
