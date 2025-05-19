@@ -10,7 +10,7 @@ export default function DeployCluster() {
   const [clusterName, setClusterName] = useState("");
   const [subdomainName, setSubdomainName] = useState("");
   const [ec2InstanceName, setEc2InstanceName] = useState("");
-  //const [cpuEnabled, setCpuEnabled] = useState(true); // default enabled
+  const [cpuEnabled] = useState(true); // default enabled
   const [gpuEnabled, setGpuEnabled] = useState(false);
   const [cpuInstanceType, setCpuInstanceType] = useState("t3a.large"); // default value
   const [gpuInstanceType, setGpuInstanceType] = useState("g4dn.xlarge");
@@ -53,10 +53,12 @@ export default function DeployCluster() {
   
     const clusterError = validateName(clusterName, "Cluster Name");
     const ec2Error = validateName(ec2InstanceName, "EC2 Instance Name", true); // allow underscores
-  
+    const cpuInstanceTypeError = !cpuInstanceType.trim() ? "CPU Instance Type is required." : "";
+
     if (clusterError) setClusterNameError(clusterError);
     if (ec2Error) setEc2NameError(ec2Error);
-  
+    if (cpuInstanceTypeError) alert(cpuInstanceTypeError);
+
     const expectedSubdomain = `platform-${clusterName}.attainx-aifactory.com`;
     if (subdomainName !== expectedSubdomain) {
       setSubdomainError(`Subdomain must be exactly: ${expectedSubdomain}`);
@@ -64,21 +66,31 @@ export default function DeployCluster() {
   
     if (clusterError || ec2Error || subdomainName !== expectedSubdomain) return;
   
-    const payload: ClusterDeployPayload = {
-      cluster_name: clusterName,
-      ec2_name: ec2InstanceName,
-      subdomain_name: subdomainName,
-      enable_cpu_image: cpuEnabled,
-      enable_gpu_image: gpuEnabled,
-      cluster_region: clusterRegion,
-      s3_bucket_name: s3BucketName,
-      disk_size: diskSize,
-      db_class: dbClass,
-      ...(cpuEnabled && { cpu_instance_type: cpuInstanceType }),
-      ...(gpuEnabled && { gpu_instance_type: gpuInstanceType }),
-    };
+      const payload: Partial<ClusterDeployPayload> = {
+        cluster_name: clusterName,        // mandatory so always included
+        ec2_name: ec2InstanceName,        // mandatory so always included
+        subdomain_name: subdomainName,      // mandatory so always included
+        enable_cpu_image: cpuEnabled,     // mandatory so always included
+        enable_gpu_image: gpuEnabled,
+        cpu_instance_type: cpuInstanceType, // mandatory so always included
+      };
     
-  
+      if (diskSize.trim()) {
+        payload.disk_size = diskSize;
+      }
+      if (gpuEnabled && gpuInstanceType.trim()) {
+        payload.gpu_instance_type = gpuInstanceType;
+      }
+      if (clusterRegion.trim()) {
+        payload.cluster_region = clusterRegion;
+      }
+      if (s3BucketName.trim()) {
+        payload.s3_bucket_name = s3BucketName;
+      }
+      if (dbClass.trim()) {
+        payload.db_class = dbClass;
+      }
+
     try {
       const res = await fetch("/api/clusters/deploy", {
         method: "POST",
@@ -87,15 +99,24 @@ export default function DeployCluster() {
       });
   
       const data = await res.json();
-      if (res.ok) {
-        alert("Cluster deployment initiated successfully!");
-      } else {
-        alert(`Deployment failed: ${data.error || "Unknown error"}`);
+      let message = data.body;
+
+      if (typeof message === "string" && message.startsWith('"')) {
+        message = JSON.parse(message);
       }
-    } catch (err) {
-      console.error("Error deploying:", err);
-      alert("Deployment failed due to network/server error.");
-    }
+
+      const match = message.match(/i-[a-zA-Z0-9]+/);  // Extract instance ID using regex
+      const instanceId = match?.[0];
+
+       if (res.ok && instanceId) {
+          localStorage.setItem("instance_id", instanceId);
+          console.log("Instance ID saved:", instanceId);
+        } else {
+          console.error("Failed to extract instance ID from response:", message);
+        }
+      } catch (err) {
+        console.error("Deployment error:", err);
+      }
   };
   
 
@@ -268,4 +289,4 @@ export default function DeployCluster() {
       </div>
     </div>
   );
-}
+  }

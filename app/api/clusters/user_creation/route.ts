@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Placeholder for backend API endpoint (to be filled once available)
-    const BACKEND_API_ENDPOINT = ''; // <-- Add actual endpoint here when ready
+    //const BACKEND_API_ENDPOINT = ''; // <-- Add actual endpoint here when ready
 
     // Optional: log for debugging during integration
     console.log('User creation payload:', body);

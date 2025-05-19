@@ -28,10 +28,14 @@ export async function POST(req: Request) {
 
     return new Response(JSON.stringify({ exists: true }), { status: 200 });
 
-  } catch (err: any) {
-    if (err.name === "UserNotFoundException") {
-      return new Response(JSON.stringify({ exists: false }), { status: 200 });
+} catch (err) {
+    // 👇 Type-safe way to check if the error is a Cognito error
+    if (typeof err === "object" && err !== null && "name" in err) {
+      if ((err as { name: string }).name === "UserNotFoundException") {
+        return new Response(JSON.stringify({ exists: false }), { status: 200 });
+      }
     }
+
     console.error("Error checking user:", err);
     return new Response(JSON.stringify({ error: "Internal error" }), { status: 500 });
   }
