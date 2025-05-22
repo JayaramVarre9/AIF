@@ -10,9 +10,9 @@ export default function DeployCluster() {
   const [clusterName, setClusterName] = useState("");
   const [subdomainName, setSubdomainName] = useState("");
   const [ec2InstanceName, setEc2InstanceName] = useState("");
-  const [cpuEnabled] = useState(true); // default enabled
+  const [cpuEnabled, setCpuEnabled] = useState(true);
   const [gpuEnabled, setGpuEnabled] = useState(false);
-  const [cpuInstanceType, setCpuInstanceType] = useState("t3a.large"); // default value
+  const [cpuInstanceType, setCpuInstanceType] = useState("t3a.large");
   const [gpuInstanceType, setGpuInstanceType] = useState("g4dn.xlarge");
   const [diskSize, setDiskSize] = useState("100");
   const [dbClass, setDbClass] = useState("db.t4g.micro");
@@ -23,6 +23,13 @@ export default function DeployCluster() {
   const [clusterNameError, setClusterNameError] = useState("");
   const [subdomainError, setSubdomainError] = useState("");
   const [ec2NameError, setEc2NameError] = useState("");
+
+  const [deployMlflow, setDeployMlflow] = useState(true);
+  const [deployMonitoring, setDeployMonitoring] = useState(true);
+  const [deployAutoscaler, setDeployAutoscaler] = useState(true);
+  const [deployLabelStudio, setDeployLabelStudio] = useState(false);
+  const [labelStudioEmail, setLabelStudioEmail] = useState("");
+  const [labelStudioPassword, setLabelStudioPassword] = useState("");
 
   type ClusterDeployPayload = {
     cluster_name: string;
@@ -36,6 +43,12 @@ export default function DeployCluster() {
     db_class: string;
     cpu_instance_type?: string;
     gpu_instance_type?: string;
+    deploy_mlflow?: boolean;
+    deploy_prometheus_and_grafana?: boolean;
+    deploy_cluster_autoscaler?: boolean;
+    deploy_label_studio?: boolean;
+    label_studio_admin_email?: string;
+    label_studio_admin_password?: string;
   };
 
   const validateName = (name: string, label: string, allowUnderscore = false): string => {
@@ -46,79 +59,71 @@ export default function DeployCluster() {
     return "";
   };
 
-  const handleDeploy = async () => {
-    setClusterNameError("");
-    setSubdomainError("");
-    setEc2NameError("");
-  
-    const clusterError = validateName(clusterName, "Cluster Name");
-    const ec2Error = validateName(ec2InstanceName, "EC2 Instance Name", true); // allow underscores
-    const cpuInstanceTypeError = !cpuInstanceType.trim() ? "CPU Instance Type is required." : "";
+ const handleDeploy = async () => {
+  setClusterNameError("");
+  setSubdomainError("");
+  setEc2NameError("");
 
-    if (clusterError) setClusterNameError(clusterError);
-    if (ec2Error) setEc2NameError(ec2Error);
-    if (cpuInstanceTypeError) alert(cpuInstanceTypeError);
+  const clusterError = validateName(clusterName, "Cluster Name");
+  const ec2Error = validateName(ec2InstanceName, "EC2 Instance Name", true);
+  const cpuInstanceTypeError = !cpuInstanceType.trim() ? "CPU Instance Type is required." : "";
 
-    const expectedSubdomain = `platform-${clusterName}.attainx-aifactory.com`;
-    if (subdomainName !== expectedSubdomain) {
-      setSubdomainError(`Subdomain must be exactly: ${expectedSubdomain}`);
-    }
-  
-    if (clusterError || ec2Error || subdomainName !== expectedSubdomain) return;
-  
-      const payload: Partial<ClusterDeployPayload> = {
-        cluster_name: clusterName,        // mandatory so always included
-        ec2_name: ec2InstanceName,        // mandatory so always included
-        subdomain_name: subdomainName,      // mandatory so always included
-        enable_cpu_image: cpuEnabled,     // mandatory so always included
-        enable_gpu_image: gpuEnabled,
-        cpu_instance_type: cpuInstanceType, // mandatory so always included
-      };
-    
-      if (diskSize.trim()) {
-        payload.disk_size = diskSize;
-      }
-      if (gpuEnabled && gpuInstanceType.trim()) {
-        payload.gpu_instance_type = gpuInstanceType;
-      }
-      if (clusterRegion.trim()) {
-        payload.cluster_region = clusterRegion;
-      }
-      if (s3BucketName.trim()) {
-        payload.s3_bucket_name = s3BucketName;
-      }
-      if (dbClass.trim()) {
-        payload.db_class = dbClass;
-      }
+  if (clusterError) setClusterNameError(clusterError);
+  if (ec2Error) setEc2NameError(ec2Error);
+  if (cpuInstanceTypeError) alert(cpuInstanceTypeError);
 
-    try {
-      const res = await fetch("/api/clusters/deploy", {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" },
-      });
-  
-      const data = await res.json();
-      let message = data.body;
+  const expectedSubdomain = `platform-${clusterName}.attainx-aifactory.com`;
+  if (subdomainName !== expectedSubdomain) {
+    setSubdomainError(`Subdomain must be exactly: ${expectedSubdomain}`);
+  }
 
-      if (typeof message === "string" && message.startsWith('"')) {
-        message = JSON.parse(message);
-      }
+  if (clusterError || ec2Error || subdomainName !== expectedSubdomain) return;
 
-      const match = message.match(/i-[a-zA-Z0-9]+/);  // Extract instance ID using regex
-      const instanceId = match?.[0];
-
-       if (res.ok && instanceId) {
-          localStorage.setItem("instance_id", instanceId);
-          console.log("Instance ID saved:", instanceId);
-        } else {
-          console.error("Failed to extract instance ID from response:", message);
-        }
-      } catch (err) {
-        console.error("Deployment error:", err);
-      }
+  const payload: Partial<ClusterDeployPayload> = {
+    cluster_name: clusterName,
+    ec2_name: ec2InstanceName,
+    subdomain_name: subdomainName,
+    enable_cpu_image: cpuEnabled,
+    enable_gpu_image: gpuEnabled,
+    cpu_instance_type: cpuInstanceType,
   };
-  
+
+  if (diskSize.trim()) payload.disk_size = diskSize;
+  if (gpuEnabled && gpuInstanceType.trim()) payload.gpu_instance_type = gpuInstanceType;
+  if (clusterRegion.trim()) payload.cluster_region = clusterRegion;
+  if (s3BucketName.trim()) payload.s3_bucket_name = s3BucketName;
+  if (dbClass.trim()) payload.db_class = dbClass;
+
+  payload.deploy_mlflow = deployMlflow;
+  payload.deploy_prometheus_and_grafana = deployMonitoring;
+  payload.deploy_cluster_autoscaler = deployAutoscaler;
+
+  if (deployLabelStudio) {
+    payload.deploy_label_studio = true;
+    if (labelStudioEmail.trim()) payload.label_studio_admin_email = labelStudioEmail;
+    if (labelStudioPassword.trim()) payload.label_studio_admin_password = labelStudioPassword;
+  }
+
+  try {
+    const res = await fetch("/api/clusters/deploy", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.instance_id) {
+      localStorage.setItem("instance_id", data.instance_id);
+      alert(`✅ Cluster deployed successfully! Instance ID: ${data.instance_id}`);
+    } else {
+      alert(`❌ Deployment failed: ${data?.error || "Unknown error"}`);
+    }
+  } catch (err) {
+    console.error("🚨 Deployment error:", err);
+    alert("❌ Deployment failed due to a network or server error.");
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#E7E6E6] text-black p-6">
@@ -127,7 +132,6 @@ export default function DeployCluster() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="bg-[#C0CEE6]">
           <CardContent className="space-y-4 p-6">
-            {/* Cluster Name */}
             <div>
               <label className="block text-sm font-medium mb-1 text-[#233A77]">
                 Cluster Name <span className="text-red-600">*</span>
@@ -148,15 +152,12 @@ export default function DeployCluster() {
                   }
                 }}
               />
-              {clusterNameError && (
-                <p className="text-red-600 text-sm mt-1">{clusterNameError}</p>
-              )}
+              {clusterNameError && <p className="text-red-600 text-sm mt-1">{clusterNameError}</p>}
             </div>
 
-            {/* EC2 Instance Name */}
             <div>
               <label className="block text-sm font-medium mb-1 text-[#233A77]">
-                EC2  Name <span className="text-red-600">*</span>
+                EC2 Name <span className="text-red-600">*</span>
               </label>
               <Input
                 placeholder="AIFlexDeployCluster"
@@ -169,42 +170,49 @@ export default function DeployCluster() {
                   setEc2NameError(error);
                 }}
               />
-              {ec2NameError && (
-                <p className="text-red-600 text-sm mt-1">{ec2NameError}</p>
-              )}
+              {ec2NameError && <p className="text-red-600 text-sm mt-1">{ec2NameError}</p>}
             </div>
 
-            {/* CPU Instance */}
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#233A77]">
-                  CPU Instance Type <span className="text-red-600">*</span>
-                </label>
-                <Input
-                  placeholder="t2.medium"
-                  className="bg-white border-[#BFBBBF]"
-                  value={cpuInstanceType}
-                  onChange={(e) => setCpuInstanceType(e.target.value)}
-                />
-              </div>
+            {/* CPU Image + Instance Type */}
 
-            {/* GPU Instance */}
-            <div>
-              <label className="inline-flex items-center space-x-2 text-[#233A77]">
-                <Checkbox checked={gpuEnabled} onCheckedChange={(checked) => setGpuEnabled(!!checked)} />
-                <span>Enable GPU Instance</span>
-              </label>
-              {gpuEnabled && (
-                <div className="mt-2">
-                  <label className="block text-sm font-medium mb-1 text-[#233A77]">GPU Instance Type</label>
-                  <Input
-                    placeholder="g4dn.xlarge"
-                    className="bg-white border-[#BFBBBF]"
-                    value={gpuInstanceType}
-                    onChange={(e) => setGpuInstanceType(e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1 text-[#233A77]">
+      CPU Instance Type <span className="text-red-600">*</span>
+    </label>
+    <Input
+      placeholder="t3a.large"
+      className="bg-white border-[#BFBBBF]"
+      value={cpuInstanceType}
+      onChange={(e) => setCpuInstanceType(e.target.value)}
+    />
+  </div>
+
+
+            {/* GPU Image + Instance Type */}
+            <div className="space-y-2">
+  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+    <Checkbox checked={cpuEnabled} onCheckedChange={(checked) => setCpuEnabled(!!checked)} />
+    <span>Enable CPU Image</span>
+  </label>
+<div className="space-y-2 mt-4">
+  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+    <Checkbox checked={gpuEnabled} onCheckedChange={(checked) => setGpuEnabled(!!checked)} />
+    <span>Enable GPU Image</span>
+  </label>
+  </div>
+  {gpuEnabled && (
+    <div>
+      <label className="block text-sm font-medium mb-1 text-[#233A77]">GPU Instance Type</label>
+      <Input
+        placeholder="g4dn.xlarge"
+        className="bg-white border-[#BFBBBF]"
+        value={gpuInstanceType}
+        onChange={(e) => setGpuInstanceType(e.target.value)}
+      />
+    </div>
+  )}
+</div>
 
             <div className="pt-2">
               <Button onClick={handleDeploy} className="w-full bg-[#C51E26] text-white hover:bg-[#A3151B]">
@@ -227,66 +235,110 @@ export default function DeployCluster() {
                 value={subdomainName}
                 readOnly
               />
-              {subdomainError && (
-                <p className="text-red-600 text-sm mt-1">{subdomainError}</p>
-              )}
+              {subdomainError && <p className="text-red-600 text-sm mt-1">{subdomainError}</p>}
               <p className="text-xs mt-1 text-[#595959]">
-                Format: <strong>platform-&lt;cluster_name&gt;.attainx-aifactory.com</strong> (Auto-generated)
+                Format: <strong>platform-&lt;cluster_name&gt;.attainx-aifactory.com</strong>
               </p>
             </div>
 
-            {/* Advanced Config */}
-            <div>
-              <details className="mt-4" open={showAdvanced}>
-                <summary
-                  className="cursor-pointer text-sm font-semibold text-[#233A77]"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                >
-                  Advanced Configuration
-                </summary>
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-[#233A77]">Disk Size (GB)</label>
-                    <Input
-                      placeholder="100"
-                      className="bg-white border-[#BFBBBF]"
-                      value={diskSize}
-                      onChange={(e) => setDiskSize(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-[#233A77]">DB Class</label>
-                    <Input
-                      placeholder="db.t4g.micro"
-                      className="bg-white border-[#BFBBBF]"
-                      value={dbClass}
-                      onChange={(e) => setDbClass(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-[#233A77]">Cluster Region</label>
-                    <Input
-                      placeholder="us-east-1"
-                      className="bg-white border-[#BFBBBF]"
-                      value={clusterRegion}
-                      onChange={(e) => setClusterRegion(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-[#233A77]">S3 Bucket Name</label>
-                    <Input
-                      placeholder="aifactory-tf"
-                      className="bg-white border-[#BFBBBF]"
-                      value={s3BucketName}
-                      onChange={(e) => setS3BucketName(e.target.value)}
-                    />
-                  </div>
+            <details className="mt-4" open={showAdvanced}>
+              <summary
+                className="cursor-pointer text-sm font-semibold text-[#233A77]"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                Advanced Configuration
+              </summary>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#233A77]">Disk Size (GB)</label>
+                  <Input
+                    placeholder="100"
+                    className="bg-white border-[#BFBBBF]"
+                    value={diskSize}
+                    onChange={(e) => setDiskSize(e.target.value)}
+                  />
                 </div>
-              </details>
-            </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#233A77]">DB Class</label>
+                  <Input
+                    placeholder="db.t4g.micro"
+                    className="bg-white border-[#BFBBBF]"
+                    value={dbClass}
+                    onChange={(e) => setDbClass(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#233A77]">Cluster Region</label>
+                  <Input
+                    placeholder="us-east-1"
+                    className="bg-white border-[#BFBBBF]"
+                    value={clusterRegion}
+                    onChange={(e) => setClusterRegion(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#233A77]">S3 Bucket Name</label>
+                  <Input
+                    placeholder="aifactory-tf"
+                    className="bg-white border-[#BFBBBF]"
+                    value={s3BucketName}
+                    onChange={(e) => setS3BucketName(e.target.value)}
+                  />
+                </div>
+
+                <hr className="my-4" />
+                <h3 className="text-md font-semibold text-[#233A77]">Optional Services</h3>
+
+                <div className="space-y-2">
+                  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+                    <Checkbox checked={deployMlflow} onCheckedChange={(checked) => setDeployMlflow(!!checked)} />
+                    <span>Deploy MLflow</span>
+                  </label>
+
+                  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+                    <Checkbox checked={deployMonitoring} onCheckedChange={(checked) => setDeployMonitoring(!!checked)} />
+                    <span>Deploy Prometheus & Grafana</span>
+                  </label>
+
+                  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+                    <Checkbox checked={deployAutoscaler} onCheckedChange={(checked) => setDeployAutoscaler(!!checked)} />
+                    <span>Deploy Cluster Autoscaler</span>
+                  </label>
+
+                  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+                    <Checkbox checked={deployLabelStudio} onCheckedChange={(checked) => setDeployLabelStudio(!!checked)} />
+                    <span>Deploy Label Studio</span>
+                  </label>
+
+                  {deployLabelStudio && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1 text-[#233A77]">Label Studio Admin Email</label>
+                        <Input
+                          placeholder="user@example.com"
+                          className="bg-white border-[#BFBBBF]"
+                          value={labelStudioEmail}
+                          onChange={(e) => setLabelStudioEmail(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1 text-[#233A77]">Label Studio Admin Password</label>
+                        <Input
+                          placeholder="password"
+                          type="password"
+                          className="bg-white border-[#BFBBBF]"
+                          value={labelStudioPassword}
+                          onChange={(e) => setLabelStudioPassword(e.target.value)}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </details>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-  }
+}

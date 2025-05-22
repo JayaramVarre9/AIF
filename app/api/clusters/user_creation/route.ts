@@ -5,10 +5,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cluster_name, instance_id, username, email, password } = body;
+    const { cluster_name, instance_id, username,region, email, password } = body;
 
     // Basic input validation
-    if (!cluster_name || !instance_id || !username || !email || !password) {
+    if (!cluster_name || !instance_id || !username || !email || !password || !region) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Placeholder for backend API endpoint (to be filled once available)
-    //const BACKEND_API_ENDPOINT = ''; // <-- Add actual endpoint here when ready
+    const BACKEND_API_ENDPOINT = 'https://buds86mpe8.execute-api.us-east-1.amazonaws.com/default/AIFlexAddUserFunciton'; // <-- Add actual endpoint here when ready
 
     // Optional: log for debugging during integration
     console.log('User creation payload:', body);
 
     
-    /*
+    
     const response = await fetch(BACKEND_API_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         cluster_name,
         instance_id,
         username,
+        region,
         email,
         password,
       }),
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(data);
-    */
+    
 
     // Temporary success response until endpoint is live
     return NextResponse.json({ message: 'Stub: user creation successful' });

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SignatureV4 } from "@aws-sdk/signature-v4";
 import { HttpRequest } from "@aws-sdk/protocol-http";
 import { Sha256 } from "@aws-crypto/sha256-js";
-import { defaultProvider } from "@aws-sdk/credential-provider-node"; // Pulls AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const payload = await req.json();
 
     const signer = new SignatureV4({
-      credentials: defaultProvider(), // Automatically uses environment AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+      credentials: defaultProvider(),
       region: "us-east-1",
       service: "execute-api",
       sha256: Sha256,
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       headers: {
         host: endpoint,
         "content-type": "application/json",
-        "x-api-key": process.env.AWS_API_KEY2!, // 🔥 Correct API KEY injected
+        "x-api-key": process.env.AWS_API_KEY2!,
       },
       body: JSON.stringify(payload),
     });
@@ -54,7 +54,22 @@ export async function POST(req: NextRequest) {
 
     const data = await awsResponse.json();
 
-    return NextResponse.json({ message: "Cluster deployed successfully", data });
+    // Extract instance ID from either top-level or from body
+    let instanceId = data.instance_id;
+
+    if (!instanceId && typeof data.body === "string") {
+      const match = data.body.match(/i-[a-zA-Z0-9]+/);
+      if (match) instanceId = match[0];
+    }
+
+    if (!instanceId) {
+      return NextResponse.json({ error: "Instance ID not found in response" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      message: "Cluster deployed successfully",
+      instance_id: instanceId,
+    });
   } catch (error) {
     console.error("Deployment Error:", error);
     return NextResponse.json(

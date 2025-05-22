@@ -1,48 +1,61 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { SignatureV4 } from "@aws-sdk/signature-v4";
+import { HttpRequest } from "@aws-sdk/protocol-http";
+import { Sha256 } from "@aws-crypto/sha256-js";
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
-// This will be reset on each request — for demo only.
-// Replace with database or persistent store in production.
-interface Cluster {
-    cluster_name: string;
-    instance_type: string;
-    region: string;
-    user_id: string;
-    gpu: boolean;
-    cpu: boolean;
-    launched_at: string;
-    status: string;
+export const dynamic = "force-dynamic";
+
+export async function POST(req: Request) {
+  try {
+    const { instance_id } = await req.json();
+
+    if (!instance_id) {
+      return NextResponse.json({ error: "Missing instance_id" }, { status: 400 });
+    }
+
+    const signer = new SignatureV4({
+      credentials: defaultProvider(),
+      region: "us-east-1",
+      service: "execute-api",
+      sha256: Sha256,
+    });
+
+    const endpoint = "buds86mpe8.execute-api.us-east-1.amazonaws.com";
+    const path = "/default/AIFlexDeleteCluster";
+
+    const unsignedRequest = new HttpRequest({
+      method: "POST",
+      protocol: "https:",
+      hostname: endpoint,
+      path,
+      headers: {
+        host: endpoint,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ instance_id }),
+    });
+
+    const signedRequest = await signer.sign(unsignedRequest);
+
+    const awsResponse = await fetch(`https://${signedRequest.hostname}${signedRequest.path}`, {
+      method: signedRequest.method,
+      headers: signedRequest.headers,
+      body: signedRequest.body,
+    });
+
+    const result = await awsResponse.json().catch(() => ({}));
+
+    if (!awsResponse.ok) {
+      return NextResponse.json(
+        { error: result.error || "Cluster deletion failed" },
+        { status: awsResponse.status }
+      );
+    }
+
+    return NextResponse.json({ message: "Cluster deleted successfully", result });
+  } catch (err) {
+    console.error("Error deleting cluster:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-  let internalStore: Cluster[] = [];
-
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const newClusters = body.clusters || [];
-  internalStore.push(...newClusters);
-  return NextResponse.json({ message: "Clusters stored successfully." });
-}
-
-{/*export async function GET(req: NextRequest) {
-  return NextResponse.json({
-    message: "Fetched running clusters.",
-    clusters: internalStore,
-  });
-}*/}
-
-export async function DELETE(req: NextRequest) {
-  const url = new URL(req.url);
-  const nameToDelete = url.searchParams.get("name");
-
-  if (!nameToDelete) {
-    return NextResponse.json({ error: "Missing cluster name." }, { status: 400 });
-  }
-
-  const originalLength = internalStore.length;
-  internalStore = internalStore.filter(cluster => cluster.cluster_name !== nameToDelete);
-
-  const deleted = internalStore.length !== originalLength;
-
-  return NextResponse.json({
-    message: deleted ? "Cluster deleted successfully." : "Cluster not found.",
-    deleted,
-  });
 }

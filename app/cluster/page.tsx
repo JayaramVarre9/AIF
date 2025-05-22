@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
+
 interface ClusterUser {
   user_name: string;
   email: string;
@@ -30,7 +31,6 @@ interface Cluster {
   endpoint: string;
   cpu: string;
   gpu: string;
-  instance_id: string; 
 }
 
 export default function ClusterPage() {
@@ -40,23 +40,21 @@ export default function ClusterPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [pendingDeleteCluster, setPendingDeleteCluster] = useState<Cluster | null>(null);
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchClusters() {
       try {
         const res = await fetch('/api/clusters/running');
         const data = await res.json();
-        console.log('Fetched Data:', data);
-        
+        const clustersList = data.clusters || [];
 
-        const clustersList = Array.isArray(data) ? data : data.clusters || [];
-
-        const parsedClusters: Cluster[] = clustersList.map((item: Partial<Cluster>) => ({
+        const parsedClusters: Cluster[] = clustersList.map((item: any) => ({
           cluster_name: item.cluster_name || '',
           launched_at: item.launched_at ? item.launched_at.replace(' ', 'T') : '',
           status: item.status || 'unknown',
@@ -65,11 +63,9 @@ export default function ClusterPage() {
           cpu: item.cpu || '',
           gpu: item.gpu || '',
           region: item.region || '',
-          instance_id: item.instance_id || '', // ✅ Extract instance_id
-          users: [],
+          users: item.users || [],
         }));
 
-        console.log('Parsed Clusters:', parsedClusters);
         setClusters(parsedClusters);
       } catch (error) {
         console.error('Failed to fetch clusters:', error);
@@ -85,24 +81,29 @@ export default function ClusterPage() {
 
   const handleAddUser = async () => {
     if (!selectedCluster) return;
-  
+
+    const instanceId = localStorage.getItem("instance_id");
+    if (!instanceId) {
+      console.error("No instance ID found in localStorage");
+      return;
+    }
+
     const payload = {
       cluster_name: selectedCluster.cluster_name,
-      instance_id: selectedCluster.instance_id,
+      instance_id: instanceId,
+      region: selectedCluster.region,
       username,
       email,
       password,
     };
-  
+
     try {
       const res = await fetch('/api/clusters/user_creation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-  
+
       if (res.ok) {
         const newUser: ClusterUser = {
           user_name: username,
@@ -110,18 +111,15 @@ export default function ClusterPage() {
           password,
           created_at: new Date().toISOString(),
         };
-  
+
         setClusters((prev) =>
           prev.map((cluster) =>
             cluster.cluster_name === selectedCluster.cluster_name
-              ? {
-                  ...cluster,
-                  users: [...(cluster.users || []), newUser],
-                }
+              ? { ...cluster, users: [...(cluster.users || []), newUser] }
               : cluster
           )
         );
-  
+
         setIsAddUserOpen(false);
         setUsername('');
         setEmail('');
@@ -133,32 +131,44 @@ export default function ClusterPage() {
       console.error('Error adding user:', error);
     }
   };
-  
 
-  const handleDelete = async (name: string) => {
+  const handleDelete = async () => {
+    const instanceId = localStorage.getItem("instance_id");
+    if (!instanceId) {
+      console.error("No instance ID found in localStorage");
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/clusters/running?name=${name}`, {
-        method: 'DELETE',
+      const res = await fetch("/api/clusters/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instance_id: instanceId }),
       });
 
+      const data = await res.json();
       if (res.ok) {
-        setClusters((prev) => prev.filter((c) => c.cluster_name !== name));
+        console.log("Cluster deleted successfully:", data);
+        localStorage.removeItem("instance_id");
+        if (selectedCluster) {
+          setClusters((prev) =>
+            prev.filter((c) => c.cluster_name !== selectedCluster.cluster_name)
+          );
+        }
         setConfirmDeleteOpen(false);
       } else {
-        console.error('Failed to delete cluster');
+        console.error("Failed to delete cluster:", data);
       }
-    } catch (error) {
-      console.error('Error deleting cluster:', error);
+    } catch (err) {
+      console.error("Error deleting cluster:", err);
     }
   };
-  const router = useRouter();
+
   return (
     <div className="px-4 sm:px-8 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Active Clusters</h1>
-        <Button onClick={() => router.push('/')}>
-          Deploy New Cluster
-        </Button>
+        <Button onClick={() => router.push('/')}>Deploy New Cluster</Button>
       </div>
 
       <div className="mb-6">
@@ -171,76 +181,67 @@ export default function ClusterPage() {
         />
       </div>
 
-
-
-         {/*<pre className="bg-gray-100 text-sm p-4">  //******Debugger *******
-                {JSON.stringify(clusters, null, 2)}
-         </pre>*/}
-      
-      
-      
-      
       {filteredClusters.length === 0 ? (
-  <p className="text-gray-500 text-center mt-8">No clusters are currently running.</p>
-) : (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {filteredClusters.map((cluster, index) => (
-      <Card key={index}>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">{cluster.cluster_name}</h2>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    cluster.status === 'active'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}
-                >
-                  {cluster.status}
-                </span>
-              </div>
-              <div className="text-sm space-y-1">
-                <div className="text-gray-600">🔹 Region: {cluster.region}</div>
-                <div className="text-gray-600">🕒 Created: {typeof window !== 'undefined' && new Date(cluster.launched_at).toLocaleDateString()}</div>
-                <div className="text-gray-600">💻 CPU: {cluster.cpu || 'N/A'}</div> 
-                <div className="text-gray-600">🎮 GPU: {cluster.gpu || 'N/A'}</div>
-              </div>
-              <div className="flex gap-3 pt-2"> 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedCluster(cluster);
-                    setIsDialogOpen(true);
-                  }}
-                >
-                  Manage
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCluster(cluster);
-                    setIsAddUserOpen(true);
-                  }}
-                >
-                  Add User
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => {
-                    setPendingDeleteCluster(cluster);
-                    setConfirmDeleteOpen(true);
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-)}
+        <p className="text-gray-500 text-center mt-8">No clusters are currently running.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredClusters.map((cluster, index) => (
+            <Card key={index}>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold">{cluster.cluster_name}</h2>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      cluster.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}
+                  >
+                    {cluster.status}
+                  </span>
+                </div>
+                <div className="text-sm space-y-1">
+                  <div className="text-gray-600">🔹 Region: {cluster.region}</div>
+                  <div className="text-gray-600">🕒 Created: {typeof window !== 'undefined' && new Date(cluster.launched_at).toLocaleDateString()}</div>
+                  <div className="text-gray-600">💻 CPU: {cluster.cpu || 'N/A'}</div>
+                  <div className="text-gray-600">🎮 GPU: {cluster.gpu || 'N/A'}</div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedCluster(cluster);
+                      setIsDialogOpen(true);
+                    }}
+                  >
+                    Manage
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCluster(cluster);
+                      setIsAddUserOpen(true);
+                    }}
+                  >
+                    Add User
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      setSelectedCluster(cluster);
+                      setConfirmDeleteOpen(true);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Manage Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -251,29 +252,29 @@ export default function ClusterPage() {
           </DialogHeader>
           <div className="space-y-2 text-sm">
             <p>Status: <strong>{selectedCluster?.status || 'Unknown'}</strong></p>
-
-            <p>Launched at:{' '}
-                 {typeof window !== 'undefined' && selectedCluster?.launched_at
-                 ? new Date(selectedCluster.launched_at).toLocaleDateString()
-                 : 'N/A'}
+            <p>
+              Launched at:{' '}
+              {typeof window !== 'undefined' && selectedCluster?.launched_at
+                ? new Date(selectedCluster.launched_at).toLocaleDateString()
+                : 'N/A'}
             </p>
-
-             <p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>
-             <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
+            <p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>
+            <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
             <p>GPU Nodes Present: {selectedCluster?.gpu || 'N/A'}</p>
+            <p>EC2 Instance ID: <strong>{typeof window !== 'undefined' ? localStorage.getItem("instance_id") ?? 'N/A' : 'Loading...'}</strong></p>
 
             {selectedCluster && selectedCluster.users && selectedCluster.users.length > 0 && (
-  <>
-            <h3 className="pt-4 font-semibold">Users</h3>
-            <ul className="list-disc pl-5">
-            {selectedCluster.users.map((user, idx) => (
-                <li key={idx}>
-                {user.user_name} ({user.email})
-                </li>
-            ))}
-            </ul>
-        </>
-        )}
+              <>
+                <h3 className="pt-4 font-semibold">Users</h3>
+                <ul className="list-disc pl-5">
+                  {selectedCluster.users.map((user, idx) => (
+                    <li key={idx}>
+                      {user.user_name} ({user.email})
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -287,27 +288,15 @@ export default function ClusterPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="username">User Name</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
+              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <div className="flex justify-end">
               <Button onClick={handleAddUser}>Add User</Button>
@@ -316,30 +305,18 @@ export default function ClusterPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm Dialog */}
+      {/* Delete Cluster Confirmation Dialog */}
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
+            <DialogTitle>Confirm Cluster Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete{' '}
-              <strong>{pendingDeleteCluster?.cluster_name}</strong>? This cannot be undone.
+              Are you sure you want to delete this cluster? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (pendingDeleteCluster) {
-                  handleDelete(pendingDeleteCluster.cluster_name);
-                }
-              }}
-            >
-              Confirm Delete
-            </Button>
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Confirm Delete</Button>
           </div>
         </DialogContent>
       </Dialog>

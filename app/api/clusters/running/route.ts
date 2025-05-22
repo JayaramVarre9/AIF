@@ -53,7 +53,7 @@ export async function GET() {
       const data = await awsResponse.json();
       
 
-    const clusters = (data?.List_of_clusters_clusters || []).map((item: AwsClusterItem) => ({
+    const clusters = (data?.List_of_clusters || []).map((item: AwsClusterItem) => ({
         cluster_name: item.name,
         status: item.status?.toLowerCase(),
         region: item.region,
