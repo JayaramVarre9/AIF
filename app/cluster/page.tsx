@@ -33,6 +33,18 @@ interface Cluster {
   gpu: string;
 }
 
+interface RawCluster {
+  cluster_name?: string;
+  launched_at?: string;
+  status?: string;
+  version?: string;
+  endpoint?: string;
+  cpu?: string;
+  gpu?: string;
+  region?: string;
+  users?: ClusterUser[];
+}
+
 export default function ClusterPage() {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [search, setSearch] = useState('');
@@ -54,7 +66,7 @@ export default function ClusterPage() {
         const data = await res.json();
         const clustersList = data.clusters || [];
 
-        const parsedClusters: Cluster[] = clustersList.map((item: any) => ({
+        const parsedClusters: Cluster[] = clustersList.map((item: RawCluster) => ({
           cluster_name: item.cluster_name || '',
           launched_at: item.launched_at ? item.launched_at.replace(' ', 'T') : '',
           status: item.status || 'unknown',
