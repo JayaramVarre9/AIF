@@ -10,7 +10,22 @@ export async function POST(req: Request) {
   } catch (error) {
     const errorMessage = (error as Error).message;
 
-    // Custom handling for users who never completed temp password setup
+    // 🔒 Password policy error handling
+    if (
+      errorMessage.includes("Password does not conform to policy") ||
+      errorMessage.toLowerCase().includes("not long enough") ||
+      errorMessage.toLowerCase().includes("password must be")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 👤 Custom handling for users who never completed temp password setup
     if (
       errorMessage.includes("Cannot reset password") ||
       errorMessage.includes("Password reset is not allowed for the user") ||
@@ -25,6 +40,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // ⚠️ Generic fallback
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

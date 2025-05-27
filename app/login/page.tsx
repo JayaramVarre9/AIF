@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [forgotStep, setForgotStep] = useState<"none" | "email" | "code">("none");
   const [resetCode, setResetCode] = useState("");
   const [resetNewPassword, setResetNewPassword] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     const token = document.cookie.includes("accessToken");
@@ -95,7 +96,9 @@ export default function LoginPage() {
     const exists = await checkUserExists(username);
   if (!exists) {
     setError("User not found. Please sign up or check your email.");
-    return;
+  }
+  if (exists){
+    setSuccessMessage("A verification code has been sent to your email.");
   }
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -105,6 +108,8 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      setSuccessMessage("A verification code has been sent to your email.");
+      setError("");
       setForgotStep("code");
     } catch (err) {
       if (err instanceof Error) setError(err.message);
@@ -136,12 +141,13 @@ export default function LoginPage() {
   };
 
   const handleBack = () => {
-    setForgotStep("none");
-    setResetCode("");
-    setResetNewPassword("");
-    setError("");
-    setPassword("");
-  };
+  setForgotStep("none");
+  setResetCode("");
+  setResetNewPassword("");
+  setError("");
+  setSuccessMessage("");
+  setPassword("");
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#233A77] via-[#1E2E5A] to-[#C51E26] px-4">
@@ -164,6 +170,8 @@ export default function LoginPage() {
           {isNewPasswordRequired ? "Set New Password" : forgotStep === "code" ? "Reset Password" : "Sign In"}
         </h2>
         {error && <p className="text-red-600 text-sm mb-3 text-center">{error}</p>}
+        {successMessage && <p className="text-green-600 text-sm mb-3 text-center">{successMessage}</p>}
+
 
         {forgotStep === "code" ? (
           <form onSubmit={handleConfirmReset} className="space-y-4">

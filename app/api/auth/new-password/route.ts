@@ -10,16 +10,33 @@ export async function POST(req: Request) {
   } catch (error) {
     const errorMessage = (error as Error).message;
 
-    // Handle specific Cognito error
-    if (errorMessage.includes("new password should be given with key NEW_PASSWORD")) {
+    // 🔒 Password policy violation
+    if (
+      errorMessage.includes("Password did not conform with policy") ||
+      errorMessage.toLowerCase().includes("not long enough") ||
+      errorMessage.toLowerCase().includes("must have")
+    ) {
       return NextResponse.json(
         {
-          error: "This user hasn't completed initial setup. Please use the temporary password provided during sign-up.",
+          error:
+            "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.",
         },
         { status: 400 }
       );
     }
 
+    // 👤 Uninitialized user setup
+    if (errorMessage.includes("new password should be given with key NEW_PASSWORD")) {
+      return NextResponse.json(
+        {
+          error:
+            "This user hasn't completed initial setup. Please use the temporary password provided during sign-up.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ⚠️ Fallback generic error
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
