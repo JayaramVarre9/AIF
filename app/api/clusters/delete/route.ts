@@ -4,6 +4,7 @@ import { HttpRequest } from "@aws-sdk/protocol-http";
 import { Sha256 } from "@aws-crypto/sha256-js";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
+
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {

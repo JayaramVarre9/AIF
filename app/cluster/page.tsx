@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
+import { deleteClusterMapping, getInstanceIdByCluster } from '@/app/utils/clusterMap';
 
 interface ClusterUser {
   user_name: string;
@@ -62,6 +63,8 @@ export default function ClusterPage() {
   useEffect(() => {
     async function fetchClusters() {
       try {
+        //localStorage.removeItem("instance_id");
+        //localStorage.clear();
         const res = await fetch('/api/clusters/running');
         const data = await res.json();
         const clustersList = data.clusters || [];
@@ -94,12 +97,11 @@ export default function ClusterPage() {
   const handleAddUser = async () => {
     if (!selectedCluster) return;
 
-    const instanceId = localStorage.getItem("instance_id");
-    if (!instanceId) {
-      console.error("No instance ID found in localStorage");
-      return;
-    }
-
+    const instanceId = getInstanceIdByCluster(selectedCluster.cluster_name);
+   if (!instanceId) {
+  console.error("No instance ID found for", selectedCluster?.cluster_name);
+  return;
+}
     const payload = {
       cluster_name: selectedCluster.cluster_name,
       instance_id: instanceId,
@@ -145,11 +147,16 @@ export default function ClusterPage() {
   };
 
   const handleDelete = async () => {
-    const instanceId = localStorage.getItem("instance_id");
-    if (!instanceId) {
-      console.error("No instance ID found in localStorage");
-      return;
-    }
+    if (!selectedCluster) {
+    console.error("No cluster selected for deletion.");
+    return;
+  }
+    const instanceId = selectedCluster ? getInstanceIdByCluster(selectedCluster.cluster_name) : null;
+if (!instanceId) {
+  console.error("No instance ID found for", selectedCluster?.cluster_name);
+  return;
+}
+     const clusterName = selectedCluster.cluster_name;
 
     try {
       const res = await fetch("/api/clusters/delete", {
@@ -159,22 +166,24 @@ export default function ClusterPage() {
       });
 
       const data = await res.json();
-      if (res.ok) {
-        console.log("Cluster deleted successfully:", data);
-        localStorage.removeItem("instance_id");
-        if (selectedCluster) {
-          setClusters((prev) =>
-            prev.filter((c) => c.cluster_name !== selectedCluster.cluster_name)
-          );
-        }
-        setConfirmDeleteOpen(false);
-      } else {
-        console.error("Failed to delete cluster:", data);
-      }
-    } catch (err) {
-      console.error("Error deleting cluster:", err);
+        if (res.ok) {
+          console.log("Cluster deleted successfully:", data);
+
+          // 🔁 Remove mapping after deletion
+
+          deleteClusterMapping(clusterName);
+
+         setClusters((prev) =>
+        prev.filter((c) => c.cluster_name !== clusterName)
+      );
+      setConfirmDeleteOpen(false);
+    } else {
+      console.error("Failed to delete cluster:", data);
     }
-  };
+  } catch (err) {
+    console.error("Error deleting cluster:", err);
+  }
+};
 
   return (
     <div className="px-4 sm:px-8 py-6">
@@ -273,7 +282,15 @@ export default function ClusterPage() {
             <p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>
             <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
             <p>GPU Nodes Present: {selectedCluster?.gpu || 'N/A'}</p>
-            <p>EC2 Instance ID: <strong>{typeof window !== 'undefined' ? localStorage.getItem("instance_id") ?? 'N/A' : 'Loading...'}</strong></p>
+            <p>
+  EC2 Instance ID:{" "}
+  <strong>
+    {selectedCluster?.cluster_name
+      ? getInstanceIdByCluster(selectedCluster.cluster_name) ?? "N/A"
+      : "N/A"}
+  </strong>
+</p>
+
 
             {selectedCluster && selectedCluster.users && selectedCluster.users.length > 0 && (
               <>

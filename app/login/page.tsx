@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 import { setCookie } from "nookies";
+import { parseCookies, destroyCookie } from "nookies";
 import Image from "next/image";
 
 export default function LoginPage() {
@@ -25,6 +26,18 @@ export default function LoginPage() {
     if (token) router.push("/");
   }, [router]);
 
+  useEffect(() => {
+  const cookies = parseCookies();
+  if (!cookies.accessToken) return;
+
+  const timeout = setTimeout(() => {
+    destroyCookie(null, "accessToken");
+    router.push("/login");
+  }, 60 * 60 * 1000); // 60 minutes
+
+  return () => clearTimeout(timeout);
+}, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -44,7 +57,9 @@ export default function LoginPage() {
           path: "/",
           secure: true,
           sameSite: "strict",
+          maxAge: 60 * 60, // 60 minutes in seconds
         });
+
 
         router.push("/");
         router.refresh();

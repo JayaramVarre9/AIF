@@ -19,6 +19,7 @@ interface AwsClusterItem {
     cognito_users: string[];
   }
 export async function GET() {
+  
   try {
     //const region = "us-east-1";
     //const endpoint = "https://buds86mpe8.execute-api.us-east-1.amazonaws.com/default/AIFlexListEKS";

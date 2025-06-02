@@ -22,6 +22,8 @@ export default function LogsPage() {
   const [selectedEventType, setSelectedEventType] = useState('all');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [searchText, setSearchText] = useState('');
+
   useEffect(() => {
     if (!selectedCluster) return;
 
@@ -43,8 +45,11 @@ export default function LogsPage() {
       }
 
       const enhancedLogs = (data.logs || []).map((log: LogEntry) => {
-        const isError = /\b(error|failed|exception|traceback)\b/i.test(log.message);
-        const status = isError ? 'error' : 'success';
+      const hasFailed = /\bfailed=1\b/i.test(log.message);
+      const hasPlayRecap = /PLAY RECAP/i.test(log.message);
+      const isError = hasFailed && hasPlayRecap;
+      const status = isError ? 'error' : 'success';
+
 
         let event_type = 'other';
         const msg = log.message.toLowerCase();
@@ -70,14 +75,17 @@ export default function LogsPage() {
   }, [selectedCluster]);
 
   const filteredLogs = logs.filter(log => {
-    const inStatus = selectedStatus === 'all' || log.status === selectedStatus;
-    const inEvent = selectedEventType === 'all' || log.event_type === selectedEventType;
-    const inTime =
-      (!startTime || log.timestamp >= new Date(startTime).getTime()) &&
-      (!endTime || log.timestamp <= new Date(endTime).getTime());
+  const inStatus = selectedStatus === 'all' || log.status === selectedStatus;
+  const inEvent = selectedEventType === 'all' || log.event_type === selectedEventType;
+  const inTime =
+    (!startTime || log.timestamp >= new Date(startTime).getTime()) &&
+    (!endTime || log.timestamp <= new Date(endTime).getTime());
+  const inSearch =
+    !searchText || log.message.toLowerCase().includes(searchText.toLowerCase());
 
-    return inStatus && inEvent && inTime;
-  });
+  return inStatus && inEvent && inTime && inSearch;
+});
+
 
   return (
     <div className="p-6">
@@ -105,17 +113,24 @@ export default function LogsPage() {
           onChange={(e) => setEndTime(e.target.value)}
         />
 
-        <select className="border rounded px-3 py-2" value={selectedEventType} onChange={(e) => setSelectedEventType(e.target.value)}>
+        {/*<select className="border rounded px-3 py-2" value={selectedEventType} onChange={(e) => setSelectedEventType(e.target.value)}>
           <option value="all">Event Type</option>
           <option value="deploy">Deploy</option>
           <option value="delete">Delete</option>
-        </select>
+        </select>*/}
 
         <select className="border rounded px-3 py-2" value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
           <option value="all">Status</option>
           <option value="success">Success</option>
           <option value="error">Error</option>
         </select>
+        <input
+            type="text"
+            placeholder="Search log message"
+            className="border rounded px-3 py-2"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
 
         <Button
           onClick={() => {

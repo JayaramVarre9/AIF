@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
+import { storePendingCluster, saveInstanceMapping } from "@/app/utils/clusterMap"
 
 export default function DeployCluster() {
   const [clusterName, setClusterName] = useState("");
@@ -104,6 +105,8 @@ export default function DeployCluster() {
     if (labelStudioPassword.trim()) payload.label_studio_admin_password = labelStudioPassword;
   }
 
+  storePendingCluster(clusterName);
+  
   try {
     const res = await fetch("/api/clusters/deploy", {
       method: "POST",
@@ -114,7 +117,8 @@ export default function DeployCluster() {
     const data = await res.json();
 
     if (res.ok && data.instance_id) {
-      localStorage.setItem("instance_id", data.instance_id);
+      //localStorage.setItem("instance_id", data.instance_id);
+       saveInstanceMapping(data.instance_id);
       alert(`✅ Cluster deployed successfully! Instance ID: ${data.instance_id}`);
     } else {
       alert(`❌ Deployment failed: ${data?.error || "Unknown error"}`);
@@ -136,22 +140,24 @@ export default function DeployCluster() {
               <label className="block text-sm font-medium mb-1 text-[#233A77]">
                 Cluster Name <span className="text-red-600">*</span>
               </label>
-              <Input
-                placeholder="my-ai-cluster"
-                className={`bg-white border ${clusterNameError ? "border-red-500" : "border-[#BFBBBF]"}`}
-                value={clusterName}
-                onChange={(e) => {
-                  const name = e.target.value;
-                  setClusterName(name);
-                  const error = validateName(name, "Cluster Name");
-                  setClusterNameError(error);
-                  if (!error) {
-                    const generatedSubdomain = `platform-${name}.attainx-aifactory.com`;
-                    setSubdomainName(generatedSubdomain);
-                    setSubdomainError("");
-                  }
-                }}
-              />
+             <Input
+  placeholder="my-ai-cluster"
+  className={`bg-white border ${clusterNameError ? "border-red-500" : "border-[#BFBBBF]"}`}
+  value={clusterName}
+  onChange={(e) => {
+    const rawName = e.target.value;
+    const name = rawName.toLowerCase(); // 👈 force lowercase
+    setClusterName(name);
+    const error = validateName(name, "Cluster Name");
+    setClusterNameError(error);
+    if (!error) {
+      const generatedSubdomain = `platform-${name}.attainx-aifactory.com`;
+      setSubdomainName(generatedSubdomain);
+      setSubdomainError("");
+    }
+  }}
+/>
+
               {clusterNameError && <p className="text-red-600 text-sm mt-1">{clusterNameError}</p>}
             </div>
 
