@@ -19,7 +19,7 @@ export default function LogsPage() {
   const [selectedCluster, setSelectedCluster] = useState<string>('');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedEventType, setSelectedEventType] = useState('all');
+  const [selectedEventType] = useState('all');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [searchText, setSearchText] = useState('');
