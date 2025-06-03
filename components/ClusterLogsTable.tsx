@@ -4,14 +4,16 @@ interface LogEntry {
   timestamp: number;
   message: string;
   status?: string;
+  
 }
 
 interface ClusterLogsTableProps {
   logs: LogEntry[];
   clusterName: string;
+  event: string;
 }
 
-export function ClusterLogsTable({ logs, clusterName }: ClusterLogsTableProps) {
+export function ClusterLogsTable({ logs, clusterName, event }: ClusterLogsTableProps) {
   const [openMessage, setOpenMessage] = useState<string | null>(null);
 
   return (
@@ -23,6 +25,7 @@ export function ClusterLogsTable({ logs, clusterName }: ClusterLogsTableProps) {
               <th className="p-3">Timestamp</th>
               <th className="p-3">Cluster Name</th>
               <th className="p-3">Status</th>
+              <th className="p-3">Event</th>
               <th className="p-3">Log Message</th>
             </tr>
           </thead>
@@ -38,6 +41,7 @@ export function ClusterLogsTable({ logs, clusterName }: ClusterLogsTableProps) {
                   <td className={`p-3 font-semibold ${log.status === 'error' ? 'text-red-700' : 'text-green-700'}`}>
                     {log.status}
                   </td>
+                  <td className="p-3">{event}</td>
                   <td
                     className="p-3 cursor-pointer text-blue-600 hover:underline max-w-xs truncate"
                     title="Click to view full message"

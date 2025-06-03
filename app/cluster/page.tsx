@@ -16,10 +16,11 @@ import { useRouter } from 'next/navigation';
 import { deleteClusterMapping, getInstanceIdByCluster } from '@/app/utils/clusterMap';
 
 interface ClusterUser {
-  user_name: string;
-  email: string;
-  password: string;
-  created_at: string;
+  Username: string;
+  Email: string;
+  EmailVerified: string;
+  ConfirmationStatus: string;
+  Status: string
 }
 
 interface Cluster {
@@ -120,10 +121,11 @@ export default function ClusterPage() {
 
       if (res.ok) {
         const newUser: ClusterUser = {
-          user_name: username,
-          email,
-          password,
-          created_at: new Date().toISOString(),
+          Username: username,
+          Email: '',
+          EmailVerified: '',
+          ConfirmationStatus: '',
+          Status: ''
         };
 
         setClusters((prev) =>
@@ -279,7 +281,7 @@ if (!instanceId) {
                 ? new Date(selectedCluster.launched_at).toLocaleDateString()
                 : 'N/A'}
             </p>
-            <p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>
+            {/*<p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>*/}
             <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
             <p>GPU Nodes Present: {selectedCluster?.gpu || 'N/A'}</p>
             <p>
@@ -298,7 +300,7 @@ if (!instanceId) {
                 <ul className="list-disc pl-5">
                   {selectedCluster.users.map((user, idx) => (
                     <li key={idx}>
-                      {user.user_name} ({user.email})
+                      {user.Username} ({user.Email})
                     </li>
                   ))}
                 </ul>

@@ -30,13 +30,28 @@ export default function LoginPage() {
   const cookies = parseCookies();
   if (!cookies.accessToken) return;
 
-  const timeout = setTimeout(() => {
-    destroyCookie(null, "accessToken");
-    router.push("/login");
-  }, 60 * 60 * 1000); // 60 minutes
+  let logoutTimer: NodeJS.Timeout;
 
-  return () => clearTimeout(timeout);
-}, []);
+  const resetTimer = () => {
+    if (logoutTimer) clearTimeout(logoutTimer);
+    logoutTimer = setTimeout(() => {
+      destroyCookie(null, "accessToken");
+      router.push("/login");
+    }, 60 * 60 * 1000); // 60 minutes
+  };
+
+  // List of activity events
+  const activityEvents = ["mousemove", "mousedown", "click", "scroll", "keydown", "touchstart"];
+
+  activityEvents.forEach((event) => window.addEventListener(event, resetTimer));
+  resetTimer(); // Start timer on load
+
+  return () => {
+    if (logoutTimer) clearTimeout(logoutTimer);
+    activityEvents.forEach((event) => window.removeEventListener(event, resetTimer));
+  };
+}, [router]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

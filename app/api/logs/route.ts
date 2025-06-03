@@ -11,10 +11,14 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const logStreamName = searchParams.get('log_stream_name');
+    const logStreamType = searchParams.get('log_type')
 
-    if (!logStreamName || typeof logStreamName !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid log_stream_name' }, { status: 400 });
-    }
+    if (logStreamName === null || logStreamType === null) {
+  return NextResponse.json(
+    { error: 'Missing Cluster Name or Log Type' },
+    { status: 400 }
+  );
+}
 
     const signer = new SignatureV4({
       credentials: defaultProvider(),
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest) {
       sha256: Sha256,
     });
 
-    const encodedPath = `/default/AIFlex_Fetch_Logs?log_stream_name=${encodeURIComponent(logStreamName)}`;
+    const encodedPath = `/default/AIFlex_Fetch_Logs?log_stream_name=${encodeURIComponent(logStreamName)}&log_type=${encodeURIComponent(logStreamType)}`;
 
     const unsignedRequest = new HttpRequest({
       method: 'GET',
