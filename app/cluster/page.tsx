@@ -101,12 +101,17 @@ const [successMessage, setSuccessMessage] = useState('');
 
   const handleAddUser = async () => {
   if (!selectedCluster) return;
+  const instanceId = getInstanceIdByCluster(selectedCluster.cluster_name);
+   if (!instanceId) {
+  console.error("No instance ID found for", selectedCluster?.cluster_name);
+  return;
+}
 
   const payload = {
     username,
     email,
     cluster_name: selectedCluster.cluster_name,
-    instance_id: "i-0eb612e912941f2ab", // replace with dynamic later if needed
+    instance_id: instanceId, // replace with dynamic later if needed
     region: selectedCluster.region,
     temp_password: password,
   };
