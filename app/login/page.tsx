@@ -37,7 +37,7 @@ export default function LoginPage() {
     logoutTimer = setTimeout(() => {
       destroyCookie(null, "accessToken");
       router.push("/login");
-    }, 60 * 60 * 1000); // 60 minutes
+    }, 1440 * 60 * 1000); //24 hrs
   };
 
   // List of activity events
@@ -72,7 +72,7 @@ export default function LoginPage() {
           path: "/",
           secure: true,
           sameSite: "strict",
-          maxAge: 60 * 60, // 60 minutes in seconds
+          maxAge:  1440 * 60, // 24 hrs
         });
 
 

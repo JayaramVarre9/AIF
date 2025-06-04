@@ -4,15 +4,17 @@ import { HttpRequest } from "@aws-sdk/protocol-http";
 import { Sha256 } from "@aws-crypto/sha256-js";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
-
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { instance_id } = await req.json();
+    const { instance_id, cluster_name } = await req.json();
 
-    if (!instance_id) {
-      return NextResponse.json({ error: "Missing instance_id" }, { status: 400 });
+    if (!instance_id || !cluster_name) {
+      return NextResponse.json(
+        { error: "Missing required fields: instance_id or cluster_name" },
+        { status: 400 }
+      );
     }
 
     const signer = new SignatureV4({
@@ -34,7 +36,10 @@ export async function POST(req: Request) {
         host: endpoint,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ instance_id }),
+      body: JSON.stringify({
+        instance_id,
+        cluster_name,
+      }),
     });
 
     const signedRequest = await signer.sign(unsignedRequest);

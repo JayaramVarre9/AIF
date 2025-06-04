@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { deleteClusterMapping, getInstanceIdByCluster } from '@/app/utils/clusterMap';
 
+
 interface ClusterUser {
   Username: string;
   Email: string;
@@ -61,6 +62,9 @@ export default function ClusterPage() {
 
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(false);
+const [successMessage, setSuccessMessage] = useState('');
+
   useEffect(() => {
     async function fetchClusters() {
       try {
@@ -96,88 +100,106 @@ export default function ClusterPage() {
   );
 
   const handleAddUser = async () => {
-    if (!selectedCluster) return;
+  if (!selectedCluster) return;
 
-    const instanceId = getInstanceIdByCluster(selectedCluster.cluster_name);
-   if (!instanceId) {
-  console.error("No instance ID found for", selectedCluster?.cluster_name);
-  return;
-}
-    const payload = {
-      cluster_name: selectedCluster.cluster_name,
-      instance_id: instanceId,
-      region: selectedCluster.region,
-      username,
-      email,
-      password,
-    };
-
-    try {
-      const res = await fetch('/api/clusters/user_creation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const newUser: ClusterUser = {
-          Username: username,
-          Email: '',
-          EmailVerified: '',
-          ConfirmationStatus: '',
-          Status: ''
-        };
-
-        setClusters((prev) =>
-          prev.map((cluster) =>
-            cluster.cluster_name === selectedCluster.cluster_name
-              ? { ...cluster, users: [...(cluster.users || []), newUser] }
-              : cluster
-          )
-        );
-
-        setIsAddUserOpen(false);
-        setUsername('');
-        setEmail('');
-        setPassword('');
-      } else {
-        console.error('Failed to add user');
-      }
-    } catch (error) {
-      console.error('Error adding user:', error);
-    }
+  const payload = {
+    username,
+    email,
+    cluster_name: selectedCluster.cluster_name,
+    instance_id: "i-0eb612e912941f2ab", // replace with dynamic later if needed
+    region: selectedCluster.region,
+    temp_password: password,
   };
 
+  try {
+    setIsLoading(true);
+    setSuccessMessage('');
+
+    const res = await fetch('/api/clusters/user_creation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const newUser: ClusterUser = {
+        Username: username,
+        Email: email,
+        EmailVerified: '',
+        ConfirmationStatus: '',
+        Status: '',
+      };
+
+      setClusters((prev) =>
+        prev.map((cluster) =>
+          cluster.cluster_name === selectedCluster.cluster_name
+            ? { ...cluster, users: [...(cluster.users || []), newUser] }
+            : cluster
+        )
+      );
+
+      setSuccessMessage('✅ User added successfully!');
+      setUsername('');
+      setEmail('');
+      setPassword('');
+
+      setTimeout(() => {
+        setIsAddUserOpen(false);
+        setSuccessMessage('');
+      }, 2000);
+    } else {
+      const data = await res.json();
+      console.error('Failed to add user:', data);
+      setSuccessMessage('❌ Failed to add user.');
+    }
+  } catch (error) {
+    console.error('Error adding user:', error);
+    setSuccessMessage('❌ Server error while adding user.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
   const handleDelete = async () => {
-    if (!selectedCluster) {
+  if (!selectedCluster) {
     console.error("No cluster selected for deletion.");
     return;
   }
-    const instanceId = selectedCluster ? getInstanceIdByCluster(selectedCluster.cluster_name) : null;
-if (!instanceId) {
-  console.error("No instance ID found for", selectedCluster?.cluster_name);
-  return;
-}
-     const clusterName = selectedCluster.cluster_name;
 
-    try {
-      const res = await fetch("/api/clusters/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instance_id: instanceId }),
-      });
+  const clusterName = selectedCluster.cluster_name;
+  const instanceId = getInstanceIdByCluster(clusterName);
 
-      const data = await res.json();
-        if (res.ok) {
-          console.log("Cluster deleted successfully:", data);
+  if (!instanceId) {
+    console.error("No instance ID found for", clusterName);
+    return;
+  }
 
-          // 🔁 Remove mapping after deletion
+  // Optional: prevent deletion while deploying
+  if (selectedCluster.status === 'CREATING') {
+    alert("Cluster is still deploying. Please wait until it's ready to delete.");
+    return;
+  }
 
-          deleteClusterMapping(clusterName);
+  try {
+    const res = await fetch("/api/clusters/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        instance_id: instanceId,
+        cluster_name: clusterName,
+      }),
+    });
 
-         setClusters((prev) =>
-        prev.filter((c) => c.cluster_name !== clusterName)
-      );
+    const data = await res.json();
+
+    if (res.ok) {
+      console.log("Cluster deleted successfully:", data);
+
+      deleteClusterMapping(clusterName);
+
+      setClusters((prev) => prev.filter((c) => c.cluster_name !== clusterName));
       setConfirmDeleteOpen(false);
     } else {
       console.error("Failed to delete cluster:", data);
@@ -186,6 +208,7 @@ if (!instanceId) {
     console.error("Error deleting cluster:", err);
   }
 };
+
 
   return (
     <div className="px-4 sm:px-8 py-6">
@@ -312,29 +335,43 @@ if (!instanceId) {
 
       {/* Add User Dialog */}
       <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add User to {selectedCluster?.cluster_name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="username">User Name</Label>
-              <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={handleAddUser}>Add User</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Add User to {selectedCluster?.cluster_name}</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="username">User Name</Label>
+        <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+      </div>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      <div>
+        <Label htmlFor="temp_password">Password</Label>
+        <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+
+      {isLoading && (
+        <p className="text-sm text-blue-600">Adding user, please wait...</p>
+      )}
+
+      {successMessage && (
+        <p className={`text-sm ${successMessage.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
+          {successMessage}
+        </p>
+      )}
+
+      <div className="flex justify-end">
+        <Button onClick={handleAddUser} disabled={isLoading}>
+          {isLoading ? 'Adding...' : 'Add User'}
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
+
 
       {/* Delete Cluster Confirmation Dialog */}
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
