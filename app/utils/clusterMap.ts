@@ -1,13 +1,13 @@
 // app/utils/clusterMap.ts
 
-const STORAGE_KEY = "clusterInstanceMap";
+//const STORAGE_KEY = "clusterInstanceMap";
 const TEMP_CLUSTER_KEY = "pendingCluster";
 
 export function storePendingCluster(clusterName: string) {
   localStorage.setItem(TEMP_CLUSTER_KEY, clusterName);
 }
 
-export function saveInstanceMapping(instanceId: string) {
+/*export function saveInstanceMapping(instanceId: string) {
   const clusterName = localStorage.getItem(TEMP_CLUSTER_KEY);
   if (!clusterName) return;
 
@@ -20,10 +20,12 @@ export function saveInstanceMapping(instanceId: string) {
 export function getInstanceIdByCluster(clusterName: string): string | null {
   const map = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   return map[clusterName] || null;
-}
+}*/
 
 export function deleteClusterMapping(clusterName: string) {
-  const map = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  /*const map = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   delete map[clusterName];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));*/
+
+  localStorage.removeItem(TEMP_CLUSTER_KEY);
 }

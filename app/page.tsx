@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { storePendingCluster, saveInstanceMapping } from "@/app/utils/clusterMap"
+import { storePendingCluster} from "@/app/utils/clusterMap"
 
 export default function DeployCluster() {
   const [clusterName, setClusterName] = useState("");
@@ -118,8 +118,32 @@ export default function DeployCluster() {
 
     if (res.ok && data.instance_id) {
       //localStorage.setItem("instance_id", data.instance_id);
-       saveInstanceMapping(data.instance_id);
-      alert(`✅ Cluster deployed successfully! Instance ID: ${data.instance_id}`);
+      // saveInstanceMapping(data.instance_id);
+      //alert(`✅ Cluster deployed successfully! Instance ID: ${data.instance_id}`);
+      const payload = {
+          cluster_name: clusterName,
+          instance_id: data.instance_id,
+          region: clusterRegion,
+          created_date: new Date().toISOString(), 
+        };
+
+        console.log("payload for dynamoDB: ",payload);
+
+      const saveRes = await fetch("/api/instance-map/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+      const saveData = await saveRes.json();
+
+      if (saveRes.ok) {
+          alert(`✅ Cluster deployed and Instance Mapping saved successfully! Instance ID: ${data.instance_id}`);
+       } else {
+          alert(`✅ Cluster deployed successfully! Instance ID: ${data.instance_id} ❌ InstanceMapping failed: ${saveData?.error || "Unknown error"}`);
+      }
+
+
     } else {
       alert(`❌ Deployment failed: ${data?.error || "Unknown error"}`);
     }

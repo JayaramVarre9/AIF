@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
-import { deleteClusterMapping, getInstanceIdByCluster } from '@/app/utils/clusterMap';
+import { deleteClusterMapping } from '@/app/utils/clusterMap';
 
 
 interface ClusterUser {
@@ -65,6 +65,11 @@ export default function ClusterPage() {
   const [isLoading, setIsLoading] = useState(false);
 const [successMessage, setSuccessMessage] = useState('');
 
+const [showPassword, setShowPassword] = useState(false);
+const [passwordError, setPasswordError] = useState('');
+
+const [instanceId, setInstanceId] = useState<string | null>(null);
+
   useEffect(() => {
     async function fetchClusters() {
       try {
@@ -99,23 +104,60 @@ const [successMessage, setSuccessMessage] = useState('');
     cluster.cluster_name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  useEffect(() => {
+  async function fetchInstanceId() {
+    if (!selectedCluster?.cluster_name) return;
+    try {
+      const res = await fetch(`/api/instance-map/${selectedCluster.cluster_name}`);
+      if (res.ok) {
+        const data = await res.json();
+        setInstanceId(data.instance_id);
+      } else {
+        setInstanceId(null);
+      }
+    } catch (error) {
+      console.error("Failed to fetch instance ID:", error);
+      setInstanceId(null);
+    }
+  }
+
+  fetchInstanceId();
+}, [selectedCluster]);
+
+
   const handleAddUser = async () => {
   if (!selectedCluster) return;
-  const instanceId = getInstanceIdByCluster(selectedCluster.cluster_name);
+  const res = await fetch(`/api/instance-map/${selectedCluster?.cluster_name}`);
+    if (!res.ok) {
+      console.error("Failed to fetch instance ID");
+      return;
+    }
+    const data = await res.json();
+    const instanceId = data.instance_id; 
    if (!instanceId) {
   console.error("No instance ID found for", selectedCluster?.cluster_name);
   return;
 }
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+  if (!passwordRegex.test(password)) {
+    setPasswordError(
+      'Password must be at least 8 characters and include upper/lowercase letters, a number, and a special character.'
+    );
+    return;
+  }
+
+  setPasswordError('');
 
   const payload = {
     username,
     email,
     cluster_name: selectedCluster.cluster_name,
-    instance_id: instanceId, // replace with dynamic later if needed
+    instance_id: instanceId, // replace with static later if needed for testing and comment out the line 102-108
     region: selectedCluster.region,
     temp_password: password,
   };
-
+  console.log("Payload for user Creaion :", payload)
   try {
     setIsLoading(true);
     setSuccessMessage('');
@@ -167,14 +209,28 @@ const [successMessage, setSuccessMessage] = useState('');
 
 
 
-  const handleDelete = async () => {
+ const handleDelete = async () => {
   if (!selectedCluster) {
     console.error("No cluster selected for deletion.");
     return;
   }
 
   const clusterName = selectedCluster.cluster_name;
-  const instanceId = getInstanceIdByCluster(clusterName);
+
+  // Fetch instance ID from backend
+  let instanceId: string | null = null;
+  try {
+    const res = await fetch(`/api/instance-map/${clusterName}`);
+    if (!res.ok) {
+      console.error("Failed to fetch instance ID");
+      return;
+    }
+    const data = await res.json();
+    instanceId = data.instance_id;
+  } catch (err) {
+    console.error("Error fetching instance ID:", err);
+    return;
+  }
 
   if (!instanceId) {
     console.error("No instance ID found for", clusterName);
@@ -201,6 +257,18 @@ const [successMessage, setSuccessMessage] = useState('');
 
     if (res.ok) {
       console.log("Cluster deleted successfully:", data);
+      setSuccessMessage('✅ Cluster Deleted successfully!');
+
+      // Delete mapping
+      const mapRes = await fetch(`/api/instance-map/${clusterName}`, {
+        method: "DELETE",
+      });
+      const mapData = await mapRes.json();
+      if (mapRes.ok) {
+        console.log("ClusterInstance Mapping deleted successfully:", mapData);
+      } else {
+        console.error("Failed to delete cluster instance mapping:", mapData);
+      }
 
       deleteClusterMapping(clusterName);
 
@@ -313,13 +381,9 @@ const [successMessage, setSuccessMessage] = useState('');
             <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
             <p>GPU Nodes Present: {selectedCluster?.gpu || 'N/A'}</p>
             <p>
-  EC2 Instance ID:{" "}
-  <strong>
-    {selectedCluster?.cluster_name
-      ? getInstanceIdByCluster(selectedCluster.cluster_name) ?? "N/A"
-      : "N/A"}
-  </strong>
-</p>
+              EC2 Instance ID:{" "}
+              <strong>{instanceId ?? "Loading..."}</strong>
+            </p>
 
 
             {selectedCluster && selectedCluster.users && selectedCluster.users.length > 0 && (
@@ -354,9 +418,27 @@ const [successMessage, setSuccessMessage] = useState('');
         <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="temp_password">Password</Label>
-        <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      </div>
+  <Label htmlFor="temp_password">Password</Label>
+  <div className="flex gap-2 items-center">
+    <Input
+      id="password"
+      type={showPassword ? 'text' : 'password'}
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+    />
+    <Button
+      type="button"
+      variant="outline"
+      className="text-xs px-2 py-1"
+      onClick={() => setShowPassword((prev) => !prev)}
+    >
+      {showPassword ? 'Hide' : 'Show'}
+    </Button>
+  </div>
+  {passwordError && (
+    <p className="text-sm text-red-600 mt-1">{passwordError}</p>
+  )}
+</div>
 
       {isLoading && (
         <p className="text-sm text-blue-600">Adding user, please wait...</p>
