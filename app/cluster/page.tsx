@@ -108,7 +108,7 @@ const [instanceId, setInstanceId] = useState<string | null>(null);
   async function fetchInstanceId() {
     if (!selectedCluster?.cluster_name) return;
     try {
-      const res = await fetch(`/api/instance-map/${selectedCluster.cluster_name}`);
+      const res = await fetch(`/api/instance-map/get?cluster_name=${selectedCluster.cluster_name}`);
       if (res.ok) {
         const data = await res.json();
         setInstanceId(data.instance_id);
@@ -127,7 +127,7 @@ const [instanceId, setInstanceId] = useState<string | null>(null);
 
   const handleAddUser = async () => {
   if (!selectedCluster) return;
-  const res = await fetch(`/api/instance-map/${selectedCluster?.cluster_name}`);
+  const res = await fetch(`/api/instance-map/get?cluster_name=${selectedCluster.cluster_name}`);
     if (!res.ok) {
       console.error("Failed to fetch instance ID");
       return;
@@ -220,7 +220,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
   // Fetch instance ID from backend
   let instanceId: string | null = null;
   try {
-    const res = await fetch(`/api/instance-map/${clusterName}`);
+    const res = await fetch(`/api/instance-map/get?cluster_name=${clusterName}`);
     if (!res.ok) {
       console.error("Failed to fetch instance ID");
       return;
@@ -260,7 +260,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       setSuccessMessage('✅ Cluster Deleted successfully!');
 
       // Delete mapping
-      const mapRes = await fetch(`/api/instance-map/${clusterName}`, {
+      const mapRes = await fetch(`/api/instance-map/delete?cluster_name=${clusterName}`, {
         method: "DELETE",
       });
       const mapData = await mapRes.json();
