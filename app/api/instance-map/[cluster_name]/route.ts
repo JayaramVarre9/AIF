@@ -10,10 +10,9 @@ const client = new DynamoDBClient({
 
 export async function GET(
   req: NextRequest,
-  contextPromise: Promise<{ params: { cluster_name: string } }>
+  context: { params: { cluster_name: string } }
 ) {
-  const { params } = await contextPromise;
-  const cluster_name = params.cluster_name;
+  const cluster_name = context.params.cluster_name;
 
   if (!cluster_name) {
     return NextResponse.json({ error: "Missing cluster_name" }, { status: 400 });
