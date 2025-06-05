@@ -26,6 +26,8 @@ export function deleteClusterMapping(clusterName: string) {
   /*const map = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
   delete map[clusterName];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map));*/
-
+  if (!clusterName){
+    console.log("No matching mapping to remove")
+  }
   localStorage.removeItem(TEMP_CLUSTER_KEY);
 }
