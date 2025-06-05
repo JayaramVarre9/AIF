@@ -10,9 +10,9 @@ const client = new DynamoDBClient({
 
 export async function GET(
   req: NextRequest,
-  context: { params: { cluster_name: string } }
+  { params }: { params: { cluster_name: string } }
 ) {
-  const cluster_name = context.params.cluster_name;
+  const { cluster_name } = params;
 
   if (!cluster_name) {
     return NextResponse.json({ error: "Missing cluster_name" }, { status: 400 });
@@ -42,9 +42,9 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { cluster_name: string } }
+  { params }: { params: { cluster_name: string } }
 ) {
-  const cluster_name = context.params.cluster_name;
+  const { cluster_name } = params;
 
   if (!cluster_name) {
     return NextResponse.json({ error: "Missing cluster_name" }, { status: 400 });
