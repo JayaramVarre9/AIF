@@ -48,6 +48,11 @@ interface RawCluster {
   users?: ClusterUser[];
 }
 
+interface LogEntry {
+  message: string;
+  [key: string]: any;
+}
+
 export default function ClusterPage() {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [search, setSearch] = useState('');
@@ -117,7 +122,7 @@ const [instanceToggle, setInstanceToggle] = useState<Record<string, boolean>>({}
     if (!res.ok) return;
 
     const data = await res.json();
-    const logs: string[] = data.logs.map((log: any) => log.message).reverse(); // newest last
+    const logs: string[] = (data.logs as LogEntry[]).map((log) => log.message).reverse(); // newest last
 
     for (const message of logs) {
       if (message.includes("PLAY RECAP") && message.includes("failed=")) {
@@ -327,6 +332,10 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 };
 
 
+  function handleToggleInstance(cluster_name: string): void {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <div className="px-4 sm:px-8 py-6">
       <div className="flex items-center justify-between mb-6">
@@ -370,6 +379,15 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
                   <div className="text-gray-600">💻 CPU: {cluster.cpu || 'N/A'}</div>
                   <div className="text-gray-600">🎮 GPU: {cluster.gpu || 'N/A'}</div>
                 </div>
+                <div className="flex items-center gap-2 pt-2">
+  <Label className="text-sm">EC2:</Label>
+  <input
+    type="checkbox"
+    checked={instanceToggle[cluster.cluster_name] ?? true}
+    onChange={() => handleToggleInstance(cluster.cluster_name)}
+  />
+</div>
+
                 <div className="flex gap-3 pt-2">
                   <Button
                     size="sm"
