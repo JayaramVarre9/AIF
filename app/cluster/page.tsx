@@ -48,9 +48,8 @@ interface RawCluster {
   users?: ClusterUser[];
 }
 
-interface LogEntry {
+interface LogMessage {
   message: string;
-  [key: string]: any;
 }
 
 export default function ClusterPage() {
@@ -79,6 +78,7 @@ const [deployStatus, setDeployStatus] = useState<Record<string, number>>({});
 
 const [instanceToggle, setInstanceToggle] = useState<Record<string, boolean>>({});
 
+const [instanceStatus, setInstanceStatus] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchClusters() {
@@ -122,7 +122,7 @@ const [instanceToggle, setInstanceToggle] = useState<Record<string, boolean>>({}
     if (!res.ok) return;
 
     const data = await res.json();
-    const logs: string[] = (data.logs as LogEntry[]).map((log) => log.message).reverse(); // newest last
+  const logs: string[] = (data.logs as LogMessage[]).map((log) => log.message).reverse(); // newest last
 
     for (const message of logs) {
       if (message.includes("PLAY RECAP") && message.includes("failed=")) {
@@ -156,8 +156,9 @@ useEffect(() => {
       const res = await fetch(`/api/instance-map/get?cluster_name=${selectedCluster.cluster_name}`);
       if (res.ok) {
         const data = await res.json();
-        setInstanceId(data.instance_id);
-        setInstanceToggle(prev => ({
+setInstanceId(data.instance_id);
+setInstanceStatus(data.status || null);
+setInstanceToggle(prev => ({
   ...prev,
   [selectedCluster.cluster_name]: !!data.instance_id,
 }));
@@ -332,9 +333,35 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 };
 
 
-  function handleToggleInstance(cluster_name: string): void {
-    throw new Error('Function not implemented.');
+const handleToggleInstance = async (cluster_name: string) => {
+  const current = instanceToggle[cluster_name];
+  if (current === false) return; // already off
+
+  try {
+    const res = await fetch(`/api/instance-map/get?cluster_name=${cluster_name}`);
+    const data = await res.json();
+    const { instance_id, status } = data;
+
+    if (!instance_id || status === 'inactive') {
+      console.warn(`Toggle blocked for ${cluster_name}: invalid instance or inactive status`);
+      return;
+    }
+
+    // Optimistically disable toggle
+    setInstanceToggle((prev) => ({ ...prev, [cluster_name]: false }));
+
+    await fetch('/api/instance/terminate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instance_id }),
+    });
+  } catch (error) {
+    console.error('Error terminating instance:', error);
+    // Revert toggle if something goes wrong
+    setInstanceToggle((prev) => ({ ...prev, [cluster_name]: true }));
   }
+};
+
 
   return (
     <div className="px-4 sm:px-8 py-6">
@@ -445,10 +472,20 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
             {/*<p>Endpoint: {selectedCluster?.endpoint || 'N/A'}</p>*/}
             <p>CPU Nodes Present: {selectedCluster?.cpu || 'N/A'}</p>
             <p>GPU Nodes Present: {selectedCluster?.gpu || 'N/A'}</p>
-            <p>
-              EC2 Instance ID:{" "}
-              <strong>{instanceId ?? "Loading..."}</strong>
-            </p>
+           <p className="flex items-center gap-2">
+  EC2 Instance ID:{" "}
+  <strong>{instanceId ?? "Loading..."}</strong>
+  {instanceStatus && (
+    <span className={`text-xs px-2 py-1 rounded-full ${
+      instanceStatus === 'active'
+        ? 'bg-green-100 text-green-700'
+        : 'bg-red-100 text-red-700'
+    }`}>
+      {instanceStatus}
+    </span>
+  )}
+</p>
+
 
 
             {selectedCluster && selectedCluster.users && selectedCluster.users.length > 0 && (

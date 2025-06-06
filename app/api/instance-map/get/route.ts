@@ -22,13 +22,16 @@ export async function GET(req: NextRequest) {
     });
 
     const data = await client.send(command);
-    const instanceId = data.Item?.instance_id?.S;
+    const item = data.Item;
 
-    if (!instanceId) {
+    if (!item || !item.instance_id?.S) {
       return NextResponse.json({ error: 'Instance ID not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ instance_id: instanceId });
+    const instanceId = item.instance_id.S;
+    const status = item.status?.S || null;
+
+    return NextResponse.json({ instance_id: instanceId, status });
   } catch (err) {
     console.error('DynamoDB GetItem error:', err);
     return NextResponse.json({ error: 'Failed to fetch mapping' }, { status: 500 });
