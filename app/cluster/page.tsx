@@ -70,6 +70,11 @@ const [passwordError, setPasswordError] = useState('');
 
 const [instanceId, setInstanceId] = useState<string | null>(null);
 
+const [deployStatus, setDeployStatus] = useState<Record<string, number>>({});
+
+const [instanceToggle, setInstanceToggle] = useState<Record<string, boolean>>({});
+
+
   useEffect(() => {
     async function fetchClusters() {
       try {
@@ -95,6 +100,8 @@ const [instanceId, setInstanceId] = useState<string | null>(null);
       } catch (error) {
         console.error('Failed to fetch clusters:', error);
       }
+      
+
     }
 
     fetchClusters();
@@ -104,6 +111,39 @@ const [instanceId, setInstanceId] = useState<string | null>(null);
     cluster.cluster_name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  async function fetchDeployStatus(cluster_name: string) {
+  try {
+    const res = await fetch(`/api/logs?log_stream_name=${cluster_name}&log_type=deploy`);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const logs: string[] = data.logs.map((log: any) => log.message).reverse(); // newest last
+
+    for (const message of logs) {
+      if (message.includes("PLAY RECAP") && message.includes("failed=")) {
+        const match = message.match(/failed=(\d+)/);
+        if (match) {
+          const failed = parseInt(match[1]);
+          setDeployStatus(prev => ({ ...prev, [cluster_name]: failed }));
+          return;
+        }
+      }
+    }
+
+    // Default if no PLAY RECAP found
+    setDeployStatus(prev => ({ ...prev, [cluster_name]: -1 }));
+  } catch (error) {
+    console.error(`Error fetching deploy status for ${cluster_name}`, error);
+    setDeployStatus(prev => ({ ...prev, [cluster_name]: -1 }));
+  }
+}
+
+useEffect(() => {
+  clusters.forEach(cluster => {
+    fetchDeployStatus(cluster.cluster_name);
+  });
+}, [clusters]);
+
   useEffect(() => {
   async function fetchInstanceId() {
     if (!selectedCluster?.cluster_name) return;
@@ -112,6 +152,10 @@ const [instanceId, setInstanceId] = useState<string | null>(null);
       if (res.ok) {
         const data = await res.json();
         setInstanceId(data.instance_id);
+        setInstanceToggle(prev => ({
+  ...prev,
+  [selectedCluster.cluster_name]: !!data.instance_id,
+}));
       } else {
         setInstanceId(null);
       }
@@ -311,10 +355,11 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
                   <h2 className="text-lg font-semibold">{cluster.cluster_name}</h2>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
-                      cluster.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}
+  cluster.status === 'active'
+    ? 'bg-green-100 text-green-700'
+    : 'bg-yellow-100 text-yellow-700'
+}`}
+
                   >
                     {cluster.status}
                   </span>
@@ -342,6 +387,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
                       setSelectedCluster(cluster);
                       setIsAddUserOpen(true);
                     }}
+                    disabled={deployStatus[cluster.cluster_name] !== 0}
                   >
                     Add User
                   </Button>
@@ -352,6 +398,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
                       setSelectedCluster(cluster);
                       setConfirmDeleteOpen(true);
                     }}
+                    disabled={deployStatus[cluster.cluster_name] === undefined}
                   >
                     Delete
                   </Button>
@@ -445,10 +492,11 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       )}
 
       {successMessage && (
-        <p className={`text-sm ${successMessage.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
-          {successMessage}
-        </p>
-      )}
+  <p className={`text-sm ${successMessage.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>
+    {successMessage}
+  </p>
+)}
+
 
       <div className="flex justify-end">
         <Button onClick={handleAddUser} disabled={isLoading}>

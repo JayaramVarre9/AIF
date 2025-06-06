@@ -15,15 +15,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const command = new PutItemCommand({
-    TableName: "ClusterInstanceMapping",
-    Item: {
-      cluster_name: { S: cluster_name },
-      instance_id: { S: instance_id },
-      region: { S: region || "us-east-1" },
-      creation_date: { S: new Date().toISOString() },
-    },
-  });
+ const ttl = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+
+const command = new PutItemCommand({
+  TableName: "ClusterInstanceMapping",
+  Item: {
+    cluster_name: { S: cluster_name },
+    instance_id: { S: instance_id },
+    region: { S: region || "us-east-1" },
+    creation_date: { S: new Date().toISOString() },
+    status: { S: "active" },
+    ttl: { N: ttl.toString() } // 👈 Add this
+  },
+});
+
 
   try {
     await client.send(command);

@@ -225,13 +225,8 @@ export default function DeployCluster() {
     <Checkbox checked={cpuEnabled} onCheckedChange={(checked) => setCpuEnabled(!!checked)} />
     <span>Enable CPU Image</span>
   </label>
-<div className="space-y-2 mt-4">
-  <label className="inline-flex items-center space-x-2 text-[#233A77]">
-    <Checkbox checked={gpuEnabled} onCheckedChange={(checked) => setGpuEnabled(!!checked)} />
-    <span>Enable GPU Image</span>
-  </label>
   </div>
-  {gpuEnabled && (
+  
     <div>
       <label className="block text-sm font-medium mb-1 text-[#233A77]">GPU Instance Type</label>
       <Input
@@ -241,8 +236,16 @@ export default function DeployCluster() {
         onChange={(e) => setGpuInstanceType(e.target.value)}
       />
     </div>
-  )}
-</div>
+    
+<div className="space-y-2 mt-4">
+  <label className="inline-flex items-center space-x-2 text-[#233A77]">
+    <Checkbox checked={gpuEnabled} onCheckedChange={(checked) => setGpuEnabled(!!checked)} />
+    <span>Enable GPU Image</span>
+  </label>
+  </div>
+ 
+  
+
 
             <div className="pt-2">
               <Button onClick={handleDeploy} className="w-full bg-[#C51E26] text-white hover:bg-[#A3151B]">

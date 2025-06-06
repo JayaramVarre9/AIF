@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { fromEnv } from '@aws-sdk/credential-provider-env';
 
 const client = new DynamoDBClient({
@@ -16,15 +16,24 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    const command = new DeleteItemCommand({
+    const command = new UpdateItemCommand({
       TableName: 'ClusterInstanceMapping',
-      Key: { cluster_name: { S: clusterName } },
+      Key: {
+        cluster_name: { S: clusterName },
+      },
+      UpdateExpression: 'SET #s = :inactive',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':inactive': { S: 'inactive' },
+      },
     });
 
     await client.send(command);
-    return NextResponse.json({ message: `Mapping for ${clusterName} deleted` });
+    return NextResponse.json({ message: `Status of ${clusterName} updated to inactive` });
   } catch (err) {
-    console.error('DynamoDB DeleteItem error:', err);
-    return NextResponse.json({ error: 'Failed to delete mapping' }, { status: 500 });
+    console.error('DynamoDB UpdateItem error:', err);
+    return NextResponse.json({ error: 'Failed to update mapping status' }, { status: 500 });
   }
 }
